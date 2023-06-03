@@ -1,0 +1,36 @@
+{
+  "name": "zyno-bot-addons",
+  "version": "1.0.0-beta.1",
+  "description": "Create easily addons for Zyno Bot",
+  "main": "index.js",
+  "keywords": [
+    "Zyno",
+    "Bot",
+    "Discord",
+    "addons"
+  ],
+  "author": "Luuk",
+  "license": "MIT",
+  "typings": "index.d.ts",
+  "dependencies": {
+    "discord.js": "^14.11.0",
+    "valuesaver": "^1.9.3",
+    "yt-stream": "^1.4.5"
+  },
+  "readme": "readme.MD",
+  "repository": {
+    "url": "https://github.com/Luuk-Dev/Zyno-Bot-addons"
+  },
+  "publisher": "Luuk",
+  "categories": [
+    "Other"
+  ],
+  "homepage": "https://zyno-bot-addons.luukdev.nl",
+  "bugs": {
+    "url": "https://github.com/Luuk-Dev/Zyno-Bot-addons/issues"
+  },
+  "displayName": "Zyno Bot addons",
+  "contributors": [{
+      "name": "Luuk" 
+  }]
+}
