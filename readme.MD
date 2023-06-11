@@ -17,7 +17,7 @@ const addon = new addons.Addon({
     description: 'This is a test addon to demonstrate how the addon system works', // The description of what the addon does
     version: '1.0.0', // The version of the addon
     author: 'Luuk', // The author of the addon
-    bitfield: [addons.bitfield.GUILDS] // An array of the permissions it needs
+    bitfield: [addons.bitfield.COMMANDS] // An array of the permissions it needs
 });
 
 addon.once('ready', () => {
@@ -38,3 +38,6 @@ addon.once('ready', () => {
     })
 });
 ```
+
+## Full documentation
+You can find the full documentation at [https://zyno-bot-addons.luukdev.nl](https://zyno-bot-addons.luukdev.nl)
