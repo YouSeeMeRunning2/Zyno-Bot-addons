@@ -1,6 +1,6 @@
 {
   "name": "zyno-bot-addons",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "description": "Create easily addons for Zyno Bot",
   "main": "index.js",
   "keywords": [
@@ -15,6 +15,7 @@
   "dependencies": {
     "discord.js": "^14.11.0",
     "valuesaver": "^1.9.3",
+    "ws": "^8.13.0",
     "yt-stream": "^1.4.5"
   },
   "readme": "readme.MD",
