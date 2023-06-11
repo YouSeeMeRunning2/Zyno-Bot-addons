@@ -90,10 +90,11 @@ class Addon extends EventEmitter{
     }
     createCommand(command){
         return new Promise((resolve, reject) => {
-            if(!(command instanceof CommandBuilder)) throw new Error(`Invalid command: Command is not instance of CommandBuilder class`);
+            if(!validatePermission(getAddonPermission(this.name), scopes.bitfield.COMMANDS)) return reject(`The addon doesn't have the permissions to create a command`);
+            if(!(command instanceof CommandBuilder)) return reject(`Invalid command: Command is not instance of CommandBuilder class`);
             var commandJSON = command.toJSON();
-            if(typeof commandJSON.name !== 'string') throw new Error('Invalid command: Command name must be a string');
-            if(typeof commandJSON.description !== 'string') throw new Error('Invalid command: Command description must be a string');
+            if(typeof commandJSON.name !== 'string') return reject('Invalid command: Command name must be a string');
+            if(typeof commandJSON.description !== 'string') return reject('Invalid command: Command description must be a string');
             commandRegistrant.register(commandJSON, this.name).then(resolve).catch(reject);
         });
     }
