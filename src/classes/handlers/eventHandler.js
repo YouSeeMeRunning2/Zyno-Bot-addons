@@ -62,6 +62,7 @@ function handleEvents(client, parser){
         await createStructures(client, _addons);
 
         parser.on('voiceStateUpdate', (_oldState, _newState) => {
+            if(!_newState || !_oldState) return;
             if(client.config.guilds.indexOf((_newState.member || _oldState.member).guild.id) < 0) return;
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
@@ -77,6 +78,7 @@ function handleEvents(client, parser){
         });
 
         parser.on('memberAdd', _member => {
+            if(!_member) return;
             if(client.config.guilds.indexOf(_member.guild.id) < 0) return;
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
@@ -89,6 +91,7 @@ function handleEvents(client, parser){
         });
 
         parser.on('memberLeave', _member => {
+            if(!_member) return;
             if(client.config.guilds.indexOf(_member.guild.id) < 0) return;
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
@@ -122,6 +125,7 @@ function handleEvents(client, parser){
         });
         
         parser.on('kick', (_member, entry) => {
+            if(!_member) return;
             if(client.config.guilds.indexOf(_member.guild.id) < 0) return;
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
@@ -159,6 +163,7 @@ function handleEvents(client, parser){
         });
 
         parser.on('muteAdd', (_oldMember, _newMember, auditLog) => {
+            if(!_oldMember || !_newMember) return;
             if(client.config.guilds.indexOf(_newMember.guild.id) < 0) return;
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
@@ -173,6 +178,7 @@ function handleEvents(client, parser){
         });
         
         parser.on('muteRemove', (_oldMember, _newMember, auditLog) => {
+            if(!_oldMember || !_newMember) return;
             if(client.config.guilds.indexOf(_newMember.guild.id) < 0) return;
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
@@ -187,6 +193,7 @@ function handleEvents(client, parser){
         });
 
         parser.on('guildMemberUpdate', async (_oldMember, _newMember) => {
+            if(!_oldMember || !_newMember) return;
             if(client.config.guilds.indexOf(_newMember.guild.id) < 0) return;
             await wait(400);
             _addons = addons.toReadableArray();
@@ -231,6 +238,7 @@ function handleEvents(client, parser){
         });
 
         client.on('userUpdate', async (_oldUser, _newUser) => {
+            if(!_oldUser || !_newUser) return;
             await wait(400);
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
@@ -252,6 +260,7 @@ function handleEvents(client, parser){
         });
 
         parser.on('ban', (ban, entry) => {
+            if(!ban) return;
             if(client.config.guilds.indexOf(ban.guild.id) < 0) return;
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
@@ -288,6 +297,7 @@ function handleEvents(client, parser){
         });
         
         parser.on('levelUp', _member => {
+            if(!_member) return;
             if(client.config.guilds.indexOf(_member.guild.id) < 0) return;
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
@@ -300,6 +310,7 @@ function handleEvents(client, parser){
         });
         
         parser.on('ticketClose', (_channel, transcript) => {
+            if(!_channel) return;
             if(client.config.guilds.indexOf(_channel.guild.id) < 0) return;
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
@@ -329,6 +340,7 @@ function handleEvents(client, parser){
         });
 
         client.on('guildMembersChunk', (_members, guild, chunk) => {
+            if(!_members || !guild) return;
             if(client.config.guilds.indexOf(guild.id) < 0) return;
             const members = Array.from(_members.values());
             for(var z = 0; z < _addons.length; z++){
@@ -366,6 +378,7 @@ function handleEvents(client, parser){
         });
 
         parser.on('messageCreate', message => {
+            if(!message) return;
             if(client.config.guilds.indexOf(message.guild.id) < 0) return;
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
@@ -378,6 +391,7 @@ function handleEvents(client, parser){
         });
 
         parser.on('messageDelete', (_message, _executor) => {
+            if(!_message) return;
             if(client.config.guilds.indexOf(_message.guild.id) < 0) return;
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
@@ -391,6 +405,7 @@ function handleEvents(client, parser){
         });
 
         parser.on('messageUpdate', (_oldMessage, _newMessage) => {
+            if(!_oldMessage || !_newMessage) return;
             if(client.config.guilds.indexOf(_newMessage.guild.id) < 0) return;
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
@@ -404,6 +419,7 @@ function handleEvents(client, parser){
         });
 
         parser.on('reactionAdd', (_reaction, _user) => {
+            if(!_reaction || !_user) return;
             if(client.config.guilds.indexOf(_reaction.message.guild.id) < 0) return;
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
@@ -417,6 +433,7 @@ function handleEvents(client, parser){
         });
 
         client.on('messageReactionRemove', async (_reaction, _user) => {
+            if(!_reaction || !_user) return;
             if(client.config.guilds.indexOf(_reaction.message.guild.id) < 0) return;
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
@@ -434,6 +451,7 @@ function handleEvents(client, parser){
         });
 
         parser.on('serverAdd', async (_guild) => {
+            if(!_guild) return;
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
@@ -446,6 +464,7 @@ function handleEvents(client, parser){
         });
 
         parser.on('guildUpdate', async (_oldGuild, _newGuild) => {
+            if(!_oldGuild || !_newGuild) return;
             if(client.config.guilds.indexOf(_newGuild.id) < 0) return;
             await wait(400);
             _addons = addons.toReadableArray();
@@ -482,6 +501,7 @@ function handleEvents(client, parser){
         });
 
         parser.on('serverDelete', (_oldServer) => {
+            if(!_oldServer) return;
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
@@ -510,6 +530,7 @@ function handleEvents(client, parser){
         });
 
         client.on('emojiCreate', async (_emoji) => {
+            if(!_emoji) return;
             if(client.config.guilds.indexOf(_emoji.guild.id) < 0) return;
             await wait(400);
             _addons = addons.toReadableArray();
@@ -538,6 +559,7 @@ function handleEvents(client, parser){
         });
 
         client.on('emojiUpdate', async (_oldEmoji, _newEmoji) => {
+            if(!_oldEmoji || !_newEmoji) return;
             if(client.config.guilds.indexOf(_newEmoji.guild.id) < 0) return;
             await wait(400);
             _addons = addons.toReadableArray();
@@ -568,6 +590,7 @@ function handleEvents(client, parser){
         });
 
         client.on('emojiDelete', async (_emoji) => {
+            if(!_emoji) return;
             if(client.config.guilds.indexOf(_emoji.guild.id) < 0) return;
             await wait(400);
             _addons = addons.toReadableArray();
@@ -597,6 +620,7 @@ function handleEvents(client, parser){
         });
 
         parser.on('channelCreate', async (_channel) => {
+            if(!_channel) return;
             if(client.config.guilds.indexOf(_channel.guild.id) < 0) return;
             await wait(400);
             _addons = addons.toReadableArray();
@@ -625,6 +649,7 @@ function handleEvents(client, parser){
         });
 
         client.on('channelUpdate', async (_oldChannel, _newChannel) => {
+            if(!_oldChannel || !_newChannel) return;
             if(client.config.guilds.indexOf(_newChannel.guild.id) < 0) return;
             await wait(400);
             _addons = addons.toReadableArray();
@@ -681,6 +706,7 @@ function handleEvents(client, parser){
         });
 
         parser.on('channelDelete', async (_channel) => {
+            if(!_channel) return;
             if(client.config.guilds.indexOf(_channel.guild.id) < 0) return;
             await wait(400);
             _addons = addons.toReadableArray();
@@ -725,6 +751,7 @@ function handleEvents(client, parser){
         });
 
         client.on('roleCreate', async (_role) => {
+            if(!_role) return;
             if(client.config.guilds.indexOf(_role.guild.id) < 0) return;
             await wait(400);
             _addons = addons.toReadableArray();
@@ -753,6 +780,7 @@ function handleEvents(client, parser){
         });
 
         client.on('roleUpdate', async (_oldRole, _newRole) => {
+            if(!_oldRole || !_newRole) return;
             if(client.config.guilds.indexOf(_newRole.guild.id) < 0) return;
             await wait(400);
             _addons = addons.toReadableArray();
@@ -783,6 +811,7 @@ function handleEvents(client, parser){
         });
 
         client.on('roleDelete', async (_role) => {
+            if(!_role) return;
             if(client.config.guilds.indexOf(_role.guild.id) < 0) return;
             await wait(400);
             _addons = addons.toReadableArray();
@@ -812,6 +841,7 @@ function handleEvents(client, parser){
         });
 
         parser.on('button', (interaction) => {
+            if(!interaction) return;
             if(!interaction.inGuild()) return;
             if(client.config.guilds.indexOf(interaction.guild?.id) < 0) return;
             _addons = addons.toReadableArray();
@@ -825,6 +855,7 @@ function handleEvents(client, parser){
         });
 
         parser.on('menu', (interaction) => {
+            if(!interaction) return;
             if(!interaction.inGuild()) return;
             if(client.config.guilds.indexOf(interaction.guild?.id) < 0) return;
             _addons = addons.toReadableArray();
