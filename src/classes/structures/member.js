@@ -5,6 +5,7 @@ const VoiceState = require('./voiceState.js');
 const Guild = require('./guild.js');
 const MemberManager = require('../managers/memberManager.js');
 const GuildMemberManager = require('../managers/guildMemberManager.js');
+const GuildManager = require('../managers/guildManager.js');
 const Save = require('../save.js');
 const Role = require('./role.js');
 const EconomyBalance = require('./saves/economyBalance.js');
@@ -27,7 +28,8 @@ class Member extends User{
         addonGuildMemberManager.set(guildMember.guild.id, guildMemberManager);
         GuildMemberManager.set(addon.name, addonGuildMemberManager);
         this.guildId = guildMember.guild.id;
-        this.guild = new Guild(guildMember.guild, addon);
+        const addonGuildManager = GuildManager.get(addon.name) || new Save();
+        this.guild = addonGuildManager.get(guildMember.guild.id);
         this.roles = new Save();
         const guildRoles = Array.from(guildMember.roles.cache.values());
         for(var i = 0; i < guildRoles.length; i++){
