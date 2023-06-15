@@ -48,9 +48,6 @@ class Guild{
         }
         this.iconURL = guild.iconURL({size: 256, dynamic: true});
         this.description = guild.description;
-        const addonGuildMemberManager = GuildMemberManager.get(this.addon.name) || new Save();
-        const guildMembers = addonGuildMemberManager.get(this.id) || new Save();
-        this.owner = guildMembers.get(guild.ownerId);
         this.ownerId = guild.ownerId;
         this.verified = guild.verified;
         this.verificationLevel = guild.verificationLevel;
@@ -280,6 +277,11 @@ class Guild{
     }
     get joinRoles(){
         return this.roles.filter(r => (client.config.joinRoles[this.id] || []).indexOf(r.value.id) >= 0);
+    }
+    get owner(){
+        const addonGuildMemberManager = GuildMemberManager.get(this.addon.name) || new Save();
+        const guildMembers = addonGuildMemberManager.get(this.id) || new Save();
+        return guildMembers.get(this.ownerId);
     }
 }
 
