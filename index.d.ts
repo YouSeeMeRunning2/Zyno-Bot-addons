@@ -2192,9 +2192,9 @@ export class Addon extends EventEmitter{
         economy: Save<string, [object]>,
         afk: Save<string, [object]>,
         badwords: Save<string, [string]>,
-        giveaways: Save<string, [object]>,
+        giveaways: Save<string, object>,
         reactrole: Save<string, [object]>,
-        suggestions: Save<string, [object]>,
+        suggestions: Save<string, object>,
         warns: Save<string, [object]>
     }>;
 
