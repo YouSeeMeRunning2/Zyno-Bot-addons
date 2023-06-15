@@ -212,7 +212,7 @@ function registerAddon(addon){
                 } catch {}
             }
         }
-        var baseName = `${addon.name}@${addon.version}-${addon.author}`;
+        const baseName = `${addon.name}@${addon.version}-${addon.author}`;
         if(typeof addon.name === 'string'){
             if(addons.get(addon.name)){
                 resolve({error: 'Invalid addon: Another addon with the same name already exists'});
@@ -227,31 +227,36 @@ function registerAddon(addon){
                         allowed: true
                     });
                     addonCreate.emit(addon.name, true);
-                    resolve(true);
+                    if(clientParser.ready === true){
+                        await createStructures(clientParser.getClient(), addons.toReadableArray());
+                        resolve(true);
+                    } else {
+                        clientParser.once('ready', async () => {
+                            await createStructures(clientParser.getClient(), addons.toReadableArray());
+                            resolve(true);
+                        });
+                    }
                 } else {
-                    addons.set(addon.name, {
-                        baseName: baseName,
-                        addon: addon,
-                        permissions: addon.permissions,
-                        verified: false,
-                        allowed: true
-                    });
-                    new Promise(async resolve => {
+                    new Promise(async _resolve => {
                         var permissionsString = getPermissionsString(addon.permissions);
                         if(clientParser.ready === true){
                             const addonRegistrant = await clientParser.getClient().registerAddon(addon, permissionsString);
-                            resolve(addonRegistrant);
+                            _resolve(addonRegistrant);
                         } else {
                             clientParser.once('ready', async () => {
                                 const addonRegistrant = await clientParser.getClient().registerAddon(addon, permissionsString);
-                                resolve(addonRegistrant);
+                                _resolve(addonRegistrant);
                             });
                         }
                     }).then(async val => {
-                        var getAddon = addons.get(addon.name);
                         if(val === true){
-                            getAddon['verified'] = true;
-                            addons.set(addon.name, getAddon);
+                            addons.set(addon.name, {
+                                baseName: baseName,
+                                addon: addon,
+                                permissions: addon.permissions,
+                                verified: true,
+                                allowed: true
+                            });
                             registeredAddons.set(baseName, {
                                 name: addon.name,
                                 bitfield: addon.permissions
@@ -264,8 +269,13 @@ function registerAddon(addon){
                             await createStructures(clientParser.getClient(), addons.toReadableArray());
                             resolve(true);
                         } else {
-                            getAddon['allowed'] = false;
-                            addons.set(addon.name, getAddon);
+                            addons.set(addon.name, {
+                                baseName: baseName,
+                                addon: addon,
+                                permissions: addon.permissions,
+                                verified: false,
+                                allowed: false
+                            });
                             addonCreate.emit(addon.name, false);
                             resolve(false);
                         }
