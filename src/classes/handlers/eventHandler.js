@@ -27,13 +27,15 @@ const MenuInteraction = require('../structures/interactions/menuInteraction.js')
 const { ChannelType, AuditLogEvent } = require('discord.js');
 
 function createStructures(client, addons){
-    return new Promise(resolve => {
+    return new Promise(async resolve => {
         const guilds = Object.values(client.mainguilds);
         for(var i = 0; i < guilds.length; i++){
             var guild = guilds[i];
             for(var z = 0; z < addons.length; z++){
                 var addonInfo = addons[z].value;
+                new Guild(guild, addonInfo.addon);
                 if(addonInfo.verified === true && addonInfo.allowed === true){
+                    await wait(1e3);
                     const members = Array.from(guild.members.cache.values());
                     for(var _i = 0; _i < members.length; _i++){
                         var _member = members[_i];
