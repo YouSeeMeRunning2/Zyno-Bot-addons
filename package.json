@@ -1,6 +1,6 @@
 {
   "name": "zyno-bot-addons",
-  "version": "1.0.5",
+  "version": "1.0.6,
   "description": "Create easily addons for Zyno Bot",
   "main": "index.js",
   "keywords": [
