@@ -25,7 +25,7 @@ type MessageContentType = {content: string; embeds: [EmbedBuilder], files: [stri
 
 type ChannelType = TextChannel | VoiceChannel | StageChannel | CategoryChannel | DirectoryChannel | ForumChannel | DMChannel | ThreadChannel;
 
-type ChannelTypes = 'GuildText' | 'DM' | 'GuildVoice' | 'GroupDM' | 'GuildCategory' | 'GuildAnnouncement' | 'AnnouncementThread' | 'PublicThread' | 'PrivateThread' | 'GuildStageVoice' | 'GuildDirectory' | 'GuildForum';
+type ChannelStringTypes = 'GuildText' | 'DM' | 'GuildVoice' | 'GroupDM' | 'GuildCategory' | 'GuildAnnouncement' | 'AnnouncementThread' | 'PublicThread' | 'PrivateThread' | 'GuildStageVoice' | 'GuildDirectory' | 'GuildForum';
 
 type ButtonStyleType = 'primary' | 'secondary' | 'success' | 'danger' | 'blurple' | 'gray' | 'grey' | 'red' | 'green' | number;
 
@@ -90,7 +90,7 @@ type CreateChannelOptions = {
     slowMode: ResolvableDate;
     autoArchiveThreads: ResolvableDate;
     parent: ResolvableParent;
-    type: ChannelTypes;
+    type: ChannelStringTypes;
     topic: string;
     nsfw: boolean;
     bitrate: number;
@@ -368,7 +368,7 @@ declare class BotCommandListener extends EventEmitter{
 
 declare class BaseChannel{
     id: string;
-    type: ChannelTypes;
+    type: ChannelStringTypes;
     created: Date;
     createdTimestamp: number;
     string: string;
@@ -2298,7 +2298,7 @@ type channelTypesObject = {
     GUILD_FORUM: 15
 };
 
-declare let channelTypes: channelTypesObject;
+declare let ChannelTypes: channelTypesObject;
 
 type commandOptionTypesObject = {
     SUB_COMMAND: 1,
@@ -2314,6 +2314,6 @@ type commandOptionTypesObject = {
     ATTACHMENT: 11
 };
 
-declare let commandOptionTypes: commandOptionTypesObject;
+declare let CommandOptionTypes: commandOptionTypesObject;
 
-export { permissionFlagsBits, bitfield, channelTypes, commandOptionTypes };
+export { permissionFlagsBits, bitfield, ChannelTypes, CommandOptionTypes };
