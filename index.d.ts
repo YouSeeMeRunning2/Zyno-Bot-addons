@@ -1668,7 +1668,7 @@ export class ActionRowBuilder{
      * Adds the components to the Action Row Builder
      * @param data The components to add to the Action Row Builder
      */
-    setComponents(...data: [ButtonBuilder | SelectMenuBuilder]) : ActionRowBuilder;
+    addComponents(...data: [ButtonBuilder | SelectMenuBuilder]) : ActionRowBuilder;
 
     components: [];
 }
@@ -2316,4 +2316,6 @@ type commandOptionTypesObject = {
 
 declare let CommandOptionTypes: commandOptionTypesObject;
 
-export { permissionsBitfield, bitfield, ChannelTypes, CommandOptionTypes };
+declare let Embed: EmbedBuilder;
+
+export { permissionsBitfield, bitfield, ChannelTypes, CommandOptionTypes, Embed };
