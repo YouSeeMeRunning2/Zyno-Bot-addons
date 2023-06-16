@@ -2262,7 +2262,7 @@ type permissionFlagsBitsObject = {
     ViewGuildInsights: bigint;
 };
 
-declare let permissionFlagsBits: permissionFlagsBitsObject;
+declare let permissionsBitfield: permissionFlagsBitsObject;
 
 type bitfieldObject = {
     COMMANDS: 1,
@@ -2316,4 +2316,4 @@ type commandOptionTypesObject = {
 
 declare let CommandOptionTypes: commandOptionTypesObject;
 
-export { permissionFlagsBits, bitfield, ChannelTypes, CommandOptionTypes };
+export { permissionsBitfield, bitfield, ChannelTypes, CommandOptionTypes };
