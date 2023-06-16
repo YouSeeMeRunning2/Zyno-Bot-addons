@@ -44,7 +44,7 @@ class CommandRegister extends EventEmitter{
                     this.addonCommands.delete(commandQueue.name);
                 }
             }
-            this.registerCommands();
+            if(this.queue.length > 0) this.registerCommands();
         });
     }
     register(commandJSON, addonName){
