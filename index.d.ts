@@ -2316,6 +2316,6 @@ type commandOptionTypesObject = {
 
 declare let CommandOptionTypes: commandOptionTypesObject;
 
-declare let Embed: EmbedBuilder;
+export class Embed extends EmbedBuilder{}
 
-export { permissionsBitfield, bitfield, ChannelTypes, CommandOptionTypes, Embed };
+export { permissionsBitfield, bitfield, ChannelTypes, CommandOptionTypes };
