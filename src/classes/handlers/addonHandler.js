@@ -132,7 +132,7 @@ class CommandRegister extends EventEmitter{
     }
     registerCommands(){
         if(this.timeout !== undefined){
-            clearTimeout(timeout);
+            clearTimeout(this.timeout);
         }
         this.timeout = setTimeout(async () => {
             this.timeout = undefined;
