@@ -2,6 +2,13 @@ const Save = require('../save.js');
 const Role = require('./role.js');
 const MemberManager = require('../managers/memberManager.js');
 const UserManager = require('../managers/userManager.js');
+const { ChannelType } = require('discord.js');
+const TextChannel = require('./channel/textChannel.js');
+const CategoryChannel = require('./channel/categoryChannel.js');
+const VoiceChannel = require('./channel/voiceChannel.js');
+const StageChannel = require('./channel/stageChannel.js');
+const ForumChannel = require('./channel/forumChannel.js');
+const DirectoryChannel = require('./channel/directoryChannel.js');
 
 class Mentions{
     constructor(data, addon, guild){
@@ -29,6 +36,27 @@ class Mentions{
             };
         });
         this.roles = new Save(roleMentions);
+        const channelMentions = Array.from(data.mentions.channels.values()).map(guildChannel => {
+            let channel = null;
+            if(guildChannel.type === ChannelType.GuildText || guildChannel.type === ChannelType.GuildAnnouncement){
+                channel = new TextChannel(guildChannel, addon, guild);
+            } else if(guildChannel.type === ChannelType.GuildCategory){
+                channel = new CategoryChannel(guildChannel, addon, guild);
+            } else if(guildChannel.type === ChannelType.GuildVoice){
+                channel = new VoiceChannel(guildChannel, addon, guild);
+            } else if(guildChannel.type === ChannelType.GuildStageVoice){
+                channel = new StageChannel(guildChannel, addon, guild);
+            } else if(guildChannel.type === ChannelType.GuildForum){
+                channel = new ForumChannel(guildChannel, addon, guild);
+            } else if(guildChannel.type === ChannelType.GuildDirectory){
+                channel = new DirectoryChannel(guildChannel, addon, guild);
+            }
+            return {
+                key: guildChannel.id,
+                value: channel
+            };
+        });
+        this.channels = new Save(channelMentions);
     }
 }
 
