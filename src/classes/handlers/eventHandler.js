@@ -381,6 +381,8 @@ function handleEvents(client, parser){
 
         parser.on('messageCreate', message => {
             if(!message) return;
+            if(!message.guild || !message.channel) return;
+            if(message.channel.type === ChannelType.DM) return;
             if(client.config.guilds.indexOf(message.guild.id) < 0) return;
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
