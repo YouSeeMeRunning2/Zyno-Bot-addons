@@ -1185,6 +1185,7 @@ declare class Mentions{
     everyone: boolean;
     members: Save<string, Member>;
     roles: Save<string, Role>;
+    channels: Save<string, ChannelType>;
 }
 
 declare class Emoji{
