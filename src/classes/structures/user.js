@@ -9,8 +9,11 @@ function getImageOptions(options){
     var imageOptions = {};
     if(typeof options === 'object'){
         if(options.dynamic){
+            imageOptions['forceStatic'] = false;
+        } else {
             imageOptions['forceStatic'] = true;
-        } else if(typeof options.extension === 'string'){
+        }
+        if(typeof options.extension === 'string'){
             imageOptions['extension'] = options.extension;
         }
         if(typeof options.size === 'number'){
