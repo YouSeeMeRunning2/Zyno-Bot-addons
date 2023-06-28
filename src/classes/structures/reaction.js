@@ -12,7 +12,7 @@ class Reaction{
         const addonGuildMemberManager = GuildMemberManager.get(addon.name) || new Save();
         const membersGuild = addonGuildMemberManager.get(this.guild.id) || new Save();
         const members = Array.from(data.users.cache.keys()).map(userId => membersGuild.get(userId));
-        this.members = new Save(members.map(m => {
+        this.members = new Save(members.filter(m => m !== undefined).map(m => {
             return {
                 key: m.id,
                 value: m
