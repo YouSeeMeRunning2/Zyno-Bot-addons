@@ -379,9 +379,16 @@ function handleEvents(client, parser){
             }
         });
 
-        parser.on('messageCreate', message => {
+        parser.on('messageCreate', async message => {
             if(!message) return;
-            if(!message.guild || !message.channel) return;
+            if(message.partial){
+                try{
+                    message = await message.fetch();
+                } catch {
+                    return;
+                }
+            }
+            if(!message.guild || !message.channel || !message.id || (!message.author && !message.member)) return;
             if(message.channel.type === ChannelType.DM) return;
             if(client.config.guilds.indexOf(message.guild.id) < 0) return;
             _addons = addons.toReadableArray();
@@ -396,6 +403,11 @@ function handleEvents(client, parser){
 
         parser.on('messageDelete', (_message, _executor) => {
             if(!_message) return;
+            if(_message.partial){
+                return;
+            }
+            if(!_message.guild || !_message.channel || !_message.id || (!_message.author && !_message.member)) return;
+            if(_message.channel.type === ChannelType.DM) return;
             if(client.config.guilds.indexOf(_message.guild.id) < 0) return;
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
@@ -408,8 +420,17 @@ function handleEvents(client, parser){
             }
         });
 
-        parser.on('messageUpdate', (_oldMessage, _newMessage) => {
+        parser.on('messageUpdate', async (_oldMessage, _newMessage) => {
             if(!_oldMessage || !_newMessage) return;
+            if(_newMessage.partial){
+                try{
+                    _newMessage = await _newMessage.fetch();
+                } catch {
+                    return;
+                }
+            }
+            if(!_newMessage.guild || !_newMessage.channel || !_newMessage.id || (!_newMessage.author && !_newMessage.member) || !_oldMessage.guild || !_oldMessage.channel || !_oldMessage.id || (!_oldMessage.author && !_oldMessage.member)) return;
+            if(_newMessage.channel.type === ChannelType.DM) return;
             if(client.config.guilds.indexOf(_newMessage.guild.id) < 0) return;
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
