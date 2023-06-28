@@ -13,7 +13,7 @@ const DirectoryChannel = require('./channel/directoryChannel.js');
 class Mentions{
     constructor(data, addon, guild){
         this.everyone = data.mentions.everyone;
-        const memberMentions = Array.from(data.mentions.users.values()).map(m => {
+        const memberMentions = Array.from(data.mentions.users.values()).filter(m => m !== undefined).map(m => {
             let author;
             if(!data.channel.isDMBased()){
                 const addonMemberManager = MemberManager.get(addon.name) || new Save();
@@ -29,14 +29,14 @@ class Mentions{
             };
         });
         this.members = new Save(memberMentions);
-        const roleMentions = Array.from(data.mentions.roles.values()).map(r => {
+        const roleMentions = Array.from(data.mentions.roles.values()).filter(r => r !== undefined).map(r => {
             return {
                 key: r.id,
                 value: new Role(r, addon, guild)
             };
         });
         this.roles = new Save(roleMentions);
-        const channelMentions = Array.from(data.mentions.channels.values()).map(guildChannel => {
+        const channelMentions = Array.from(data.mentions.channels.values()).filter(c => c !== undefined).map(guildChannel => {
             let channel = null;
             if(guildChannel.type === ChannelType.GuildText || guildChannel.type === ChannelType.GuildAnnouncement){
                 channel = new TextChannel(guildChannel, addon, guild);
