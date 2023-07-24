@@ -40,7 +40,7 @@ class StageChannel extends GuildChannel{
         this.update = function(){
             return new Promise((resolve, reject) => {
                 data.fetch().then(ch => {
-                    resolve(new VoiceChannel(ch, addon, guild));
+                    resolve(new StageChannel(ch, addon, guild));
                 }).catch(reject);
             });
         }
