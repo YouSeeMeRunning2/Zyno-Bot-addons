@@ -1,6 +1,8 @@
 const GuildChannel = require('./guildChannel.js');
 const CategoryChannel = require('./categoryChannel.js');
+const Message = require('../message.js');
 const { validatePermission, getAddonPermission, getResolvableDate, getVideoQualityMode, getRegion } = require('../../../utils/functions.js');
+const { getMessageContent } = require('../../../utils/messageFunctions.js');
 const scopes = require('../../../bitfields/scopes.js');
 const Save = require('../../save.js');
 const MemberManager = require('../../managers/memberManager.js');
@@ -27,6 +29,15 @@ class StageChannel extends GuildChannel{
         if(guild) guild.channels.set(this.id, this);
         if(validatePermission(getAddonPermission(addon.name), scopes.bitfield.CHANNELS)){
             addon.channels.set(this.id, this);
+        }
+        this.send = function(...content){
+            return new Promise((resolve, reject) => {
+                if(content.length === 0) return reject(`At least one argument must be given`);
+                let _content = getMessageContent(content);
+                data.send(_content).then(msg => {
+                    resolve(new Message(msg, addon));
+                }).catch(reject);
+            });
         }
         this.deleteMessages = function(amount){
             return new Promise((resolve, reject) => {
