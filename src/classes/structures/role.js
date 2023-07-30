@@ -3,6 +3,7 @@ const scopes = require('../../bitfields/scopes.js');
 
 class Role{
     constructor(data, addon, guild){
+        this.data = data;
         this.id = data.id;
         this.string = `<@&${this.id}>`;
         this.color = {
@@ -14,7 +15,6 @@ class Role{
         this.name = data.name;
         this.created = new Date(data.createdTimestamp);
         this.createdTimestamp = data.createdTimestamp;
-        this.editable = data.editable;
         this.guild = guild;
         this.permissions = data.permissions;
         this.mentionable = data.mentionable;
@@ -110,6 +110,9 @@ class Role{
                 this.guild.deleteRole(this.id, reason).then(() => resolve()).catch(reject);
             });
         }
+    }
+    get editable(){
+        return this.data.editable;
     }
 }
 
