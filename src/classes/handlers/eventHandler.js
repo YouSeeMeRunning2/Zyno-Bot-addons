@@ -531,7 +531,8 @@ function handleEvents(client, parser){
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
                 if(addonInfo.verified === true && addonInfo.allowed === true){
-                    const oldServer = new Guild(_oldServer, addonInfo.addon);
+                    const addonGuildManager = GuildManager.get(addonInfo.addon.name) || new Save();
+                    const oldServer = addonGuildManager.get(_oldServer.id);
                     const addonGuildMemberManager = GuildMemberManager.get(addonInfo.addon.name) || new Save();
                     addonGuildMemberManager.delete(_oldServer.id);
                     GuildMemberManager.set(addonInfo.addon.name, addonGuildMemberManager);
@@ -545,7 +546,6 @@ function handleEvents(client, parser){
                         addonMemberManager.set(memberId, g);
                     }
                     MemberManager.set(addonInfo.addon.name, addonMemberManager);
-                    const addonGuildManager = GuildManager.get(addonInfo.addon.name) || new Save();
                     addonGuildManager.delete(_oldServer.id);
                     GuildManager.set(addonInfo.addon.name, addonGuildManager);
                     addonInfo.addon.guilds.delete(_oldServer.id);
