@@ -34,7 +34,7 @@ class VoiceState{
                 if(!validatePermission(getAddonPermission(addon.name), scopes.bitfield.MEMBERS)) return reject(`Missing members scope in bitfield`);
                 if(typeof reason !== 'string') reason = undefined;
                 voiceState.disconnect(reason).then(m => {
-                    resolve(new Member(m, addon));
+                    resolve();
                 }).catch(reject);
             });
         }
@@ -44,7 +44,7 @@ class VoiceState{
                 if(typeof deaf !== 'string' && typeof deaf !== 'boolean') deaf = !this.serverDeaf;
                 if(typeof reason !== 'string') reason = undefined;
                 voiceState.setDeaf(deaf, reason).then(m => {
-                    resolve(new Member(m, addon));
+                    resolve();
                 }).catch(reject);
             });
         }
@@ -54,7 +54,7 @@ class VoiceState{
                 if(typeof mute !== 'string' && typeof mute !== 'boolean') mute = !this.serverMute;
                 if(typeof reason !== 'string') reason = undefined;
                 voiceState.setMute(mute, reason).then(m => {
-                    resolve(new Member(m, addon));
+                    resolve();
                 }).catch(reject);
             });
         }
