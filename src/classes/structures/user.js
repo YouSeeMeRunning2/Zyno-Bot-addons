@@ -1,8 +1,6 @@
 const UserManager = require('../managers/userManager.js');
 const Save = require('../save.js');
 const { getMessageContent } = require('../../utils/messageFunctions.js');
-const Message = require('./message.js');
-const DMChannel = require('./channel/dmChannel.js');
 const MemberManager = require('../managers/memberManager.js');
 
 function getImageOptions(options){
@@ -24,7 +22,7 @@ function getImageOptions(options){
 }
 
 class User{
-    constructor(user, addon, loop){
+    constructor(user, addon, loop, structureHandler){
         if(loop === false){
             const addonUserManager = UserManager.get(addon.name) || new Save();
             addonUserManager.set(user.id, new User(user, addon, true));
@@ -64,14 +62,14 @@ class User{
                 if(content.length === 0) return reject(`At least one argument must be given`);
                 let _content = getMessageContent(content);
                 user.send(_content).then(msg => {
-                    resolve(new Message(msg, addon));
+                    resolve(structureHandler.createStructure('Message', [msg, addon]));
                 }).catch(reject);
             });
         }
         this.getDMChannel = function(){
             return new Promise((resolve, reject) => {
                 user.createDM().then(ch => {
-                    resolve(new DMChannel(ch, addon));
+                    resolve(structureHandler.createStructure('DMChannel', [ch, addon]));
                 }).catch(reject);
             });
         }
