@@ -1,18 +1,12 @@
 const { validatePermission, getAddonPermission, getColorCode, getChannelId, getResolvableDate, getClient, getVideoQualityMode } = require('../../utils/functions.js');
 const scopes = require('../../bitfields/scopes.js');
-const Save = require('../save.js');
 const GuildManager = require('../managers/guildManager.js');
 const GuildMemberManager = require('../managers/guildMemberManager.js');
 const VoiceStateManager = require('../managers/voiceStateManager.js');
 const Member = require('./member.js');
 const Emoji = require('./emoji.js');
 const Role = require('./role.js');
-const TextChannel = require('./channel/textChannel.js');
 const CategoryChannel = require('./channel/categoryChannel.js');
-const VoiceChannel = require('./channel/voiceChannel.js');
-const StageChannel = require('./channel/stageChannel.js');
-const ForumChannel = require('./channel/forumChannel.js');
-const DirectoryChannel = require('./channel/directoryChannel.js');
 const { ChannelType } = require('discord.js');
 
 const validAutoArchiveDates = [60, 1440, 10080, 4320];
@@ -20,30 +14,30 @@ const validAutoArchiveDates = [60, 1440, 10080, 4320];
 let client;
 
 class Guild{
-    constructor(guild, addon){
-        const addonGuildManager = GuildManager.get(addon.name) || new Save();
+    constructor(guild, addon, structureHandler){
+        const addonGuildManager = GuildManager.get(addon.name) || structureHandler.createStructure('Save');
         addonGuildManager.set(guild.id, this);
         GuildManager.set(addon.name, addonGuildManager);
         client = getClient();
         this.addon = addon;
         this.id = guild.id;
         this.name = guild.name;
-        this.channels = new Save();
+        this.channels = structureHandler.createStructure('Save');
         const guildChannels = Array.from(guild.channels.cache.values());
         for(var i = 0; i < guildChannels.length; i++){
             var guildChannel = guildChannels[i];
             if(guildChannel.type === ChannelType.GuildText || guildChannel.type === ChannelType.GuildAnnouncement){
-                new TextChannel(guildChannel, addon, this);
+                structureHandler.createStructure('TextChannel', [guildChannel, addon, this]);
             } else if(guildChannel.type === ChannelType.GuildCategory){
-                new CategoryChannel(guildChannel, addon, this);
+                structureHandler.createStructure('CategoryChannel', [guildChannel, addon, this]);
             } else if(guildChannel.type === ChannelType.GuildVoice){
-                new VoiceChannel(guildChannel, addon, this);
+                structureHandler.createStructure('VoiceChannel', [guildChannel, addon, this]);
             } else if(guildChannel.type === ChannelType.GuildStageVoice){
-                new StageChannel(guildChannel, addon, this);
+                structureHandler.createStructure('StageChannel', [guildChannel, addon, this]);
             } else if(guildChannel.type === ChannelType.GuildForum){
-                new ForumChannel(guildChannel, addon, this);
+                structureHandler.createStructure('ForumChannel', [guildChannel, addon, this]);
             } else if(guildChannel.type === ChannelType.GuildDirectory){
-                new DirectoryChannel(guildChannel, addon, this);
+                structureHandler.createStructure('DirectoryChannel', [guildChannel, addon, this]);
             }
         }
         this.iconURL = guild.iconURL({size: 256, dynamic: true});
@@ -51,13 +45,13 @@ class Guild{
         this.ownerId = guild.ownerId;
         this.verified = guild.verified;
         this.verificationLevel = guild.verificationLevel;
-        this.emojis = new Save();
+        this.emojis = structureHandler.createStructure('Save');
         const guildEmojis = Array.from(guild.emojis.cache.values());
         for(var i = 0; i < guildEmojis.length; i++){
             var guildEmoji = guildEmojis[i];
             this.emojis.set(guildEmoji.id, new Emoji(guildEmoji, addon, this));
         }
-        this.roles = new Save();
+        this.roles = structureHandler.createStructure('Save');
         const guildRoles = Array.from(guild.roles.cache.values());
         for(var i = 0; i < guildRoles.length; i++){
             var guildRole = guildRoles[i];
@@ -69,7 +63,7 @@ class Guild{
         this.botAddedTimestamp = guild.joinedTimestamp;
         this.created = new Date(guild.createdTimestamp);
         this.createdTimestamp = guild.createdTimestamp;
-        this.voiceStates = VoiceStateManager.get(addon.name) || new Save();
+        this.voiceStates = VoiceStateManager.get(addon.name) || structureHandler.createStructure('Save');
         if(validatePermission(getAddonPermission(addon.name), scopes.bitfield.GUILDS)){
             addon.guilds.set(this.id, this);
         }
@@ -78,7 +72,7 @@ class Guild{
                 if(!validatePermission(getAddonPermission(addon.name), scopes.bitfield.GUILDS)) return reject(`Missing guilds scope in bitfield`);
                 if(typeof name !== 'string') return reject('The name of the server must be a string');
                 guild.setName(name).then(g => {
-                    resolve(new Guild(g));
+                    resolve(structureHandler.createStructure('Guild', [g]));
                 }).catch(reject);
             });
         }
@@ -88,7 +82,7 @@ class Guild{
                 if(typeof iconUrl !== 'string') return reject('The icon url is not a type of string');
                 if(typeof reason !== 'string') reason = undefined;
                 guild.setIcon(iconUrl, reason).then(g => {
-                    resolve(new Guild(g));
+                    resolve(structureHandler.createStructure('Guild', [g]));
                 }).catch(reject);
             });
         }
@@ -98,7 +92,7 @@ class Guild{
                 if(typeof bannerUrl !== 'string') return reject('The banner url is not a type of string');
                 if(typeof reason !== 'string') reason = undefined;
                 guild.setBanner(bannerUrl, reason).then(g => {
-                    resolve(new Guild(g));
+                    resolve(structureHandler.createStructure('Guild', [g]));
                 }).catch(reject);
             });
         }
@@ -108,7 +102,7 @@ class Guild{
                 if(typeof userId !== 'string') return reject('The id of the user you want to unban is not a type of string');
                 if(typeof reason !== 'string') reason = undefined;
                 guild.bans.remove(userId, reason).then(g => {
-                    resolve(new Guild(g));
+                    resolve(structureHandler.createStructure('Guild', [g]));
                 }).catch(reject);
             });
         }
@@ -118,7 +112,7 @@ class Guild{
                 if(typeof member !== 'string' && !(member instanceof Member)) return reject('The id of the user you want to unban is not a type of string and not an instance of Member class');
                 if(typeof reason !== 'string') reason = undefined;
                 guild.bans.create(member instanceof Member ? member.id : member, reason).then(g => {
-                    resolve(new Guild(g));
+                    resolve(structureHandler.createStructure('Guild' , [g]));
                 }).catch(reject);
             });
         }
@@ -246,17 +240,17 @@ class Guild{
                     }, []) : undefined
                 }).then(ch => {
                     if(ch.type === ChannelType.GuildText || ch.type === ChannelType.GuildAnnouncement){
-                        resolve(new TextChannel(ch, addon, this));
+                        resolve(structureHandler.createStructure('TextChannel', [ch, addon, this]));
                     } else if(ch.type === ChannelType.GuildCategory){
-                        resolve(new CategoryChannel(ch, addon, this));
+                        resolve(structureHandler.createStructure('CategoryChannel', [ch, addon, this]));
                     } else if(ch.type === ChannelType.GuildVoice){
-                        resolve(new VoiceChannel(ch, addon, this));
+                        resolve(structureHandler.createStructure('VoiceChannel', [ch, addon, this]));
                     } else if(ch.type === ChannelType.GuildStageVoice){
-                        resolve(new StageChannel(ch, addon, this));
+                        resolve(structureHandler.createStructure('StageChannel', [ch, addon, this]));
                     } else if(ch.type === ChannelType.GuildForum){
-                        resolve(new ForumChannel(ch, addon, this));
+                        resolve(structureHandler.createStructure('ForumChannel', [ch, addon, this]));
                     } else if(ch.type === ChannelType.GuildDirectory){
-                        resolve(new DirectoryChannel(ch, addon, this));
+                        resolve(structureHandler.createStructure('DirectoryChannel', [ch, addon, this]));
                     } else {
                         resolve(undefined);
                     }
@@ -265,8 +259,8 @@ class Guild{
         }
     }
     get members(){
-        const addonGuildMemberManager = GuildMemberManager.get(this.addon.name) || new Save();
-        const guildMembers = addonGuildMemberManager.get(this.id) || new Save();
+        const addonGuildMemberManager = GuildMemberManager.get(this.addon.name) || structureHandler.createStructure('Save');
+        const guildMembers = addonGuildMemberManager.get(this.id) || structureHandler.createStructure('Save');
         return guildMembers;
     }
     get moderationRoles(){
@@ -279,8 +273,8 @@ class Guild{
         return this.roles.filter(r => (client.config.joinRoles[this.id] || []).indexOf(r.value.id) >= 0);
     }
     get owner(){
-        const addonGuildMemberManager = GuildMemberManager.get(this.addon.name) || new Save();
-        const guildMembers = addonGuildMemberManager.get(this.id) || new Save();
+        const addonGuildMemberManager = GuildMemberManager.get(this.addon.name) || structureHandler.createStructure('Save');
+        const guildMembers = addonGuildMemberManager.get(this.id) || structureHandler.createStructure('Save');
         return guildMembers.get(this.ownerId);
     }
 }
