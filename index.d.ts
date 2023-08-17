@@ -255,7 +255,7 @@ type BotEvents = {
     memberMuteAdd: [Member, Member, MuteEntry];
     memberKick: [KickEntry];
     memberLeave: [Member];
-    memberAddd: [Member];
+    memberAdd: [Member];
     voiceUpdate: [VoiceState, VoiceState];
 };
 
@@ -1119,21 +1119,21 @@ declare class VoiceState{
      * Disconnect the member from the voice channel if the member is in a voice channel
      * @param reason The reason to disconnect the member
      */
-    disconnect(reason?: string) : Promise<Member>;
+    disconnect(reason?: string) : Promise<void>;
 
     /**
      * Server-deaf a member
      * @param deaf A boolean which defines whether the member should be deafed or not
      * @param reason The reason to deaf or undeaf the member
      */
-    setDeaf(deaf?: boolean, reason?: string) : Promise<Member>;
+    setDeaf(deaf?: boolean, reason?: string) : Promise<void>;
 
     /**
      * Server-mute a member
      * @param mute A boolean which defines whether the member should be muted or not
      * @param reason The reason to mute or unmute the user
      */
-    setMute(mute?: boolean, reason?: string) : Promise<Member>;
+    setMute(mute?: boolean, reason?: string) : Promise<void>;
 }
 
 declare class Reaction{
@@ -1142,7 +1142,7 @@ declare class Reaction{
     id: string;
     members: Save<string, Member>;
     emoji: {
-        name: string | null;
+        name: string;
         id: string | null;
         animated: boolean | null;
         string: string;
@@ -1966,6 +1966,12 @@ export class CommandOptionsBuilder{
      * @param choices The choices the member can pick between for the option
      */
     addChoices(...choices: [CommandOptionChoiceBuilder]) : CommandOptionsBuilder;
+
+    /**
+     * Add options if the command option type is a subcommand or subcommand group
+     * @param options The (group)subcommand's options
+     */
+    addOptions(...options: [CommandOptionsBuilder]) : CommandOptionsBuilder;
 
     /**
      * The type of channels which will show for a channel command option
