@@ -5,7 +5,7 @@ const Permissions = require('../permissions.js');
 const Save = require('../../save.js');
 
 class CategoryChannel extends BaseChannel{
-    constructor(data, addon, guild){
+    constructor(data, addon, guild, structureHandler){
         super(data, addon);
         this.viewable = data.viewable;
         this.name = data.name;
@@ -35,7 +35,7 @@ class CategoryChannel extends BaseChannel{
                 if(typeof name !== 'string') return reject('The name of the channel must be a type of string');
                 if(typeof reason !== 'string') reason = undefined;
                 data.setName(name, reason).then(ch => {
-                    resolve(new CategoryChannel(ch, addon, guild));
+                    resolve(structureHandler.createStructure('CategoryChannel', [ch, addon, guild]));
                 }).catch(reject);
             });
         }
@@ -45,14 +45,14 @@ class CategoryChannel extends BaseChannel{
                 if(typeof position !== 'number') return reject('The position of the channel must be a type of number');
                 if(typeof reason !== 'string') reason = undefined;
                 data.setPosition(position, {reason: reason}).then(ch => {
-                    resolve(new CategoryChannel(ch, addon, guild));
+                    resolve(structureHandler.createStructure('CategoryChannel', [ch, addon, guild]));
                 }).catch(reject);
             });
         }
         this.update = function(){
             return new Promise((resolve, reject) => {
                 data.fetch().then(ch => {
-                    resolve(new CategoryChannel(ch, addon, guild));
+                    resolve(structureHandler.createStructure('CategoryChannel', [ch, addon, guild]));
                 }).catch(reject);
             });
         }
