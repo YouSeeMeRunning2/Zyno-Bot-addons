@@ -3,7 +3,7 @@ const { validatePermission, getAddonPermission } = require('../../../utils/funct
 const scopes = require('../../../bitfields/scopes.js');
 
 class DirectoryChannel extends BaseChannel{
-    constructor(data, addon, guild){
+    constructor(data, addon, guild, structureHandler){
         super(data, addon);
         this.guild = guild;
         this.name = data.name;
@@ -20,7 +20,7 @@ class DirectoryChannel extends BaseChannel{
         this.update = function(){
             return new Promise((resolve, reject) => {
                 data.fetch().then(ch => {
-                    resolve(new DirectoryChannel(ch, addon, guild));
+                    resolve(structureHandler.createStructure('DirectoryChannel', [ch, addon, guild]));
                 }).catch(reject);
             });
         };
