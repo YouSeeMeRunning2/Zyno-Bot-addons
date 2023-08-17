@@ -58,6 +58,26 @@ class CommandOptionsBuilder{
         }
         return this;
     }
+    addOptions(...options){
+        for(var i = 0; i < options.length; i++){
+            if(Array.isArray(options[i])){
+                for(var z = 0; z < options[i].length; z++){
+                    var option = options[i][z];
+                    if(!(option instanceof CommandOptionsBuilder)) throw new Error(`Invalid command: Command option is not instance of CommandOptionsBuilder class`);
+                    var optionJSON = option.toJSON();
+                    if(typeof optionJSON.name !== 'string') throw new Error(`Invalid command: Command option name is not a string`);
+                    this.options.push(optionJSON);
+                }
+            } else {
+                var option = options[i];
+                if(!(option instanceof CommandOptionsBuilder)) throw new Error(`Invalid command: Command option is not instance of CommandOptionsBuilder class`);
+                var optionJSON = option.toJSON();
+                if(typeof optionJSON.name !== 'string') throw new Error(`Invalid command: Command option name is not a string`);
+                this.options.push(optionJSON);
+            }
+        }
+        return this;
+    }
     addChannelTypes(...channelTypes){
         for(var i = 0; i < channelTypes.length; i++){
             if(Array.isArray(channelTypes[i])){
@@ -104,8 +124,8 @@ class CommandOptionsBuilder{
         var optionObj = {
             name: this.name,
             description: this.description,
-            required: this.required,
             choices: this.choices,
+            options: this.options,
             options: this.options,
             channel_types: this.channelTypes,
             type: this.type
@@ -122,12 +142,16 @@ class CommandOptionsBuilder{
         if(typeof this.maxLength !== 'undefined'){
             optionObj['max_length'] = this.maxLength;
         }
+        if([numberTypes.CommandOptionTypes.SUB_COMMAND, numberTypes.CommandOptionTypes.SUB_COMMAND_GROUP].indexOf(this.type) < 0){
+            optionObj['required'] = this.required;
+        }
         return optionObj;
     }
     name = null;
     description = null;
     required = true;
     choices = [];
+    options = [];
     channelTypes = [];
     type = 3;
     minValue = undefined;
