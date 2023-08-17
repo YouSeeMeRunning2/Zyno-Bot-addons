@@ -3,15 +3,9 @@ const Role = require('./role.js');
 const MemberManager = require('../managers/memberManager.js');
 const UserManager = require('../managers/userManager.js');
 const { ChannelType } = require('discord.js');
-const TextChannel = require('./channel/textChannel.js');
-const CategoryChannel = require('./channel/categoryChannel.js');
-const VoiceChannel = require('./channel/voiceChannel.js');
-const StageChannel = require('./channel/stageChannel.js');
-const ForumChannel = require('./channel/forumChannel.js');
-const DirectoryChannel = require('./channel/directoryChannel.js');
 
 class Mentions{
-    constructor(data, addon, guild){
+    constructor(data, addon, guild, structureHandler){
         this.everyone = data.mentions.everyone;
         const memberMentions = Array.from(data.mentions.users.values()).filter(m => m !== undefined).map(m => {
             let author;
@@ -39,17 +33,17 @@ class Mentions{
         const channelMentions = Array.from(data.mentions.channels.values()).filter(c => c !== undefined).map(guildChannel => {
             let channel = null;
             if(guildChannel.type === ChannelType.GuildText || guildChannel.type === ChannelType.GuildAnnouncement){
-                channel = new TextChannel(guildChannel, addon, guild);
+                channel = structureHandler.createStructure('TextChannel', [guildChannel, addon, guild]);
             } else if(guildChannel.type === ChannelType.GuildCategory){
-                channel = new CategoryChannel(guildChannel, addon, guild);
+                channel = structureHandler.createStructure('CategoryChannel', [guildChannel, addon, guild]);
             } else if(guildChannel.type === ChannelType.GuildVoice){
-                channel = new VoiceChannel(guildChannel, addon, guild);
+                channel = structureHandler.createStructure('VoiceChannel', [guildChannel, addon, guild]);
             } else if(guildChannel.type === ChannelType.GuildStageVoice){
-                channel = new StageChannel(guildChannel, addon, guild);
+                channel = structureHandler.createStructure('StageChannel', [guildChannel, addon, guild]);
             } else if(guildChannel.type === ChannelType.GuildForum){
-                channel = new ForumChannel(guildChannel, addon, guild);
+                channel = structureHandler.createStructure('ForumChannel', [guildChannel, addon, guild]);
             } else if(guildChannel.type === ChannelType.GuildDirectory){
-                channel = new DirectoryChannel(guildChannel, addon, guild);
+                channel = structureHandler.createStructure('DirectoryChannel', [guildChannel, addon, guild]);
             }
             return {
                 key: guildChannel.id,
