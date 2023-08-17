@@ -3,7 +3,6 @@ const CategoryChannel = require('./categoryChannel.js');
 const { validatePermission, getAddonPermission, getClient, getResolvableDate, validateURL, getVideoQualityMode, getRegion } = require('../../../utils/functions.js');
 const { getMessageContent } = require('../../../utils/messageFunctions.js');
 const scopes = require('../../../bitfields/scopes.js');
-const Message = require('../message.js');
 const { Readable } = require('stream');
 const Save = require('../../save.js');
 const MemberManager = require('../../managers/memberManager.js');
@@ -12,7 +11,7 @@ const ytstream = require('yt-stream');
 let client;
 
 class VoiceChannel extends GuildChannel{
-    constructor(data, addon, guild){
+    constructor(data, addon, guild, structureHandler){
         super(data, addon, guild);
         client = getClient();
         this.joinable = data.joinable;
@@ -48,7 +47,7 @@ class VoiceChannel extends GuildChannel{
         this.update = function(){
             return new Promise((resolve, reject) => {
                 data.fetch().then(ch => {
-                    resolve(new VoiceChannel(ch, addon, guild));
+                    resolve(structureHandler.createStructure('VoiceChannel', [ch, addon, guild]));
                 }).catch(reject);
             });
         }
@@ -97,7 +96,7 @@ class VoiceChannel extends GuildChannel{
                         return arr;
                     }, []) : undefined
                 }).then(ch => {
-                    resolve(new VoiceChannel(ch, addon, guild));
+                    resolve(structureHandler.createStructure('VoiceChannel', [ch, addon, guild]));
                 }).catch(reject);
         	});
         }
@@ -107,7 +106,7 @@ class VoiceChannel extends GuildChannel{
                 if(typeof region !== 'string' && region !== null) return reject('Region must be a type of string or null');
                 if(typeof reason !== 'string') reason = undefined;
                 region = getRegion(region);
-                data.setRTCRegion(region, reason).then(ch => resolve(new VoiceChannel(ch, addon, guild))).catch(reject);
+                data.setRTCRegion(region, reason).then(ch => resolve(structureHandler.createStructure('VoiceChannel', [ch, addon, guild]))).catch(reject);
             });
         }
         this.setUserLimit = function(limit, reason){
@@ -117,7 +116,7 @@ class VoiceChannel extends GuildChannel{
                 if(typeof reason !== 'string') reason = undefined;
                 if(limit < 0) limit = 0;
                 else if(limit > 99) limit = 99;
-                data.setUserLimit(limit, reason).then(ch => resolve(new VoiceChannel(ch, addon, guild))).catch(reject);
+                data.setUserLimit(limit, reason).then(ch => resolve(structureHandler.createStructure('VoiceChannel', [ch, addon, guild]))).catch(reject);
             });
         }
         this.setVideoQuality = function(qualityMode, reason){
@@ -126,7 +125,7 @@ class VoiceChannel extends GuildChannel{
                 if(typeof qualityMode !== 'number' && qualityMode !== 'string') return reject('Quality mode must be a type of number or type of string');
                 if(typeof reason !== 'string') reason = undefined;
                 qualityMode = getVideoQualityMode(qualityMode);
-                data.setVideoQualityMode(qualityMode, reason).then(ch => resolve(new VoiceChannel(ch, addon, guild))).catch(reject);
+                data.setVideoQualityMode(qualityMode, reason).then(ch => resolve(structureHandler.createStructure('VoiceChannel', [ch, addon, guild]))).catch(reject);
             });
         }
         this.setBitrate = function(bitrate, reason){
@@ -134,7 +133,7 @@ class VoiceChannel extends GuildChannel{
                 if(!validatePermission(getAddonPermission(addon.name), scopes.bitfield.CHANNELS)) return reject(`Missing channels scope in bitfield`);
                 if(typeof bitrate !== 'number') return reject('Bitrate argument must be a type of number');
                 if(typeof reason !== 'string') reason = undefined;
-                data.setBitrate(bitrate, reason).then(ch => resolve(new VoiceChannel(ch, addon, guild))).catch(reject);
+                data.setBitrate(bitrate, reason).then(ch => resolve(structureHandler.createStructure('VoiceChannel', [ch, addon, guild]))).catch(reject);
             });
         }
         this.send = function(...content){
@@ -142,7 +141,7 @@ class VoiceChannel extends GuildChannel{
                 if(content.length === 0) return reject(`At least one argument must be given`);
                 let _content = getMessageContent(content);
                 data.send(_content).then(msg => {
-                    resolve(new Message(msg, addon));
+                    resolve(structureHandler.createStructure('Message', [msg, addon]));
                 }).catch(reject);
             });
         }
