@@ -2,7 +2,6 @@ const { validatePermission, getResolvableDate, getAddonPermission, wait, getClie
 const scopes = require('../../bitfields/scopes.js');
 const User = require('./user.js');
 const VoiceState = require('./voiceState.js');
-const Guild = require('./guild.js');
 const MemberManager = require('../managers/memberManager.js');
 const GuildMemberManager = require('../managers/guildMemberManager.js');
 const GuildManager = require('../managers/guildManager.js');
@@ -14,8 +13,8 @@ const Level = require('./saves/level.js');
 let client;
 
 class Member extends User{
-	constructor(guildMember, addon){
-        super(guildMember.user, addon, false);
+	constructor(guildMember, addon, structureHandler){
+        super(guildMember.user, addon, false, structureHandler);
         client = getClient();
         const addonMemberManager = MemberManager.get(addon.name) || new Save();
         const memberManager = addonMemberManager.get(guildMember.id) || new Save();
