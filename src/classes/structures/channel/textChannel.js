@@ -3,14 +3,12 @@ const CategoryChannel = require('./categoryChannel.js');
 const { validatePermission, getAddonPermission, getResolvableDate } = require('../../../utils/functions.js');
 const { getMessageContent } = require('../../../utils/messageFunctions.js');
 const scopes = require('../../../bitfields/scopes.js');
-const Message = require('../message.js');
 const Save = require('../../save.js');
-const ThreadChannel = require('./threadChannel.js');
 
 const validAutoArchiveDates = [60, 1440, 10080, 4320];
 
 class TextChannel extends GuildChannel{
-    constructor(data, addon, guild){
+    constructor(data, addon, guild, structureHandler){
         super(data, addon, guild);
         this.topic = data.topic;
         this.autoArchiveThreads = typeof data.defaultAutoArchiveDuration === 'number' ? data.defaultAutoArchiveDuration * 60 * 1000 : 0;
@@ -18,7 +16,7 @@ class TextChannel extends GuildChannel{
         const guildThreads = Array.from(data.threads.cache.values());
         for(var i = 0; i < guildThreads.length; i++){
             var guildThread = guildThreads[i];
-            new ThreadChannel(guildThread, addon, guild);
+            structureHandler.createStructure('ThreadChannel', [guildThread, addon, guild]);
         }
         if(guild) guild.channels.set(this.id, this);
         if(validatePermission(getAddonPermission(addon.name), scopes.bitfield.CHANNELS)){
@@ -30,7 +28,7 @@ class TextChannel extends GuildChannel{
             	if(typeof topic !== 'string') return reject('Topic argument must be a type of string');
                 if(typeof reason !== 'string') reason = undefined;
                 data.setTopic(topic, reason).then(ch => {
-                    resolve(new TextChannel(ch, addon, guild));
+                    resolve(structureHandler.createStructure('TextChannel', [ch, addon, guild]));
                 }).catch(reject);
             });
         }
@@ -39,14 +37,14 @@ class TextChannel extends GuildChannel{
                 if(content.length === 0) return reject(`At least one argument must be given`);
                 let _content = getMessageContent(content);
                 data.send(_content).then(msg => {
-                    resolve(new Message(msg, addon));
+                    resolve(structureHandler.createStructure('Message', [msg, addon]));
                 }).catch(reject);
             });
         }
         this.update = function(){
             return new Promise((resolve, reject) => {
                 data.fetch().then(ch => {
-                    resolve(new TextChannel(ch, addon, guild));
+                    resolve(structureHandler.createStructure('ThreadChannel', [ch, addon, guild]));
                 }).catch(reject);
             });
         }
@@ -54,7 +52,7 @@ class TextChannel extends GuildChannel{
             return new Promise((resolve, reject) => {
                 if(!validatePermission(getAddonPermission(addon.name), scopes.bitfield.MESSAGES)) return reject(`Missing messages scope in bitfield`);
                 if(typeof messageId !== 'string') return reject('Message id argument must be a type of string');
-                data.messages.fetch(messageId).then(msg => resolve(new Message(msg, addon))).catch(reject);
+                data.messages.fetch(messageId).then(msg => resolve(structureHandler.createStructure('Message', [msg, addon]))).catch(reject);
             });
         }
         this.deleteMessages = function(amount){
@@ -118,7 +116,7 @@ class TextChannel extends GuildChannel{
                         return arr;
                     }, []) : undefined
                 }).then(ch => {
-                    resolve(new TextChannel(ch, addon, guild));
+                    resolve(structureHandler.createStructure('TextChannel', [ch, addon, guild]));
                 }).catch(reject);
         	});
         }
@@ -168,7 +166,7 @@ class TextChannel extends GuildChannel{
                     reason: options.reason,
                     startMessage: options.message instanceof Message || typeof options.message === 'string' ? (options.message instanceof Message ? options.message.id : options.message) : undefined
                 }).then(thread => {
-                    resolve(new ThreadChannel(thread, addon, this.guild));
+                    resolve(structureHandler.createStructure('ThreadChannel', [thread, addon, this.guild]));
                 }).catch(reject);
             });
         }
