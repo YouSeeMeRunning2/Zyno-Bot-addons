@@ -2,17 +2,14 @@ const { validatePermission, getAddonPermission } = require('../../utils/function
 const { getMessageContent } = require('../../utils/messageFunctions.js');
 const scopes = require('../../bitfields/scopes.js');
 const Save = require('../save.js');
-const Mentions = require('./mentions.js');
 const MemberManager = require('../managers/memberManager.js');
 const UserManager = require('../managers/userManager.js');
 const Emoji = require('./emoji.js');
-const ThreadChannel = require('./channel/threadChannel.js');
-const DMChannel = require('./channel/dmChannel.js');
 
 const validAutoArchiveDates = [60, 1440, 10080, 4320];
 
 class Message{
-	constructor(data, addon){
+	constructor(data, addon, structureHandler){
         if(!data.channel.isDMBased()){
             const addonMemberManager = MemberManager.get(addon.name) || new Save();
             const memberManager = addonMemberManager.get((data.author || data.member).id) || new Save();
@@ -23,7 +20,7 @@ class Message{
             this.author = addonUserManager.get((data.author || data.member).id);
             this.guild = this.author;
         }
-        this.isMe = this.author.id === data.client.user.id;
+        this.isMe = typeof this.author !== 'undefined' ? this.author.id === data.client.user.id : false;
         this.created = new Date(data.createdTimestamp);
         this.createdTimestamp = data.createdTimestamp;
         this.editable = data.editable;
@@ -32,9 +29,9 @@ class Message{
         this.id = data.id;
         this.attachments = new Save(data.attachments);
         this.url = data.url;
-        this.channel = data.channel.isDMBased() ? new DMChannel(data.channel, addon) : this.guild.channels.get(data.channelId);
+        this.channel = data.channel.isDMBased() ? structureHandler.createStructure('DMChannel', [data.channel, addon]) : (this.guild !== null && this.guild !== undefined ? this.guild.channels.get(data.channelId) : null);
         this.deletable = data.deletable;
-        this.mentions = new Mentions(data, addon, this.guild);
+        this.mentions = structureHandler.createStructure('Mentions', [data, addon, this.guild]);
         this.content = data.content || '';
         this.delete = function(){
             return new Promise((resolve, reject) => {
@@ -47,7 +44,7 @@ class Message{
                 if(content.length === 0) return reject(`At least one argument must be given`);
                 if(this.editable === false) return reject('This message can not be edited as it was not send by the bot');
                 let _content = getMessageContent(content);
-                data.edit(_content).then(msg => resolve(new Message(msg, addon))).catch(reject);
+                data.edit(_content).then(msg => resolve(structureHandler.createStructure('Message', [msg, addon]))).catch(reject);
             });
         }
         this.react = function(reaction){
@@ -60,12 +57,12 @@ class Message{
         this.removeAttachments = function(){
             return new Promise((resolve, reject) => {
                 if(!validatePermission(getAddonPermission(addon.name), scopes.bitfield.MESSAGES)) return reject(`Missing members scope in bitfield`);
-                data.removeAttachments().then(msg => resolve(new Message(msg, addon))).catch(reject);
+                data.removeAttachments().then(msg => resolve(structureHandler.createStructure('Message', [msg, addon]))).catch(reject);
             });
         }
         this.update = function(){
             return new Promise((resolve, reject) => {
-                data.fetch().then(msg => resolve(new Message(msg, addon))).catch(reject);
+                data.fetch().then(msg => resolve(structureHandler.createStructure('Message', [msg, addon]))).catch(reject);
             });
         }
         this.createThread = (options) => {
@@ -98,7 +95,7 @@ class Message{
                     autoArchiveDuration: archiveDate,
                     reason: options.reason,
                 }).then(thread => {
-                    resolve(new ThreadChannel(thread, addon, this.guild));
+                    resolve(structureHandler.createStructure('ThreadChannel', [thread, addon, this.guild]));
                 }).catch(reject);
             });
         }
