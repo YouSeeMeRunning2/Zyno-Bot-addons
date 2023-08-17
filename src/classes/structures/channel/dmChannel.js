@@ -5,7 +5,7 @@ const { validatePermission, getAddonPermission } = require('../../../utils/funct
 const scopes = require('../../../bitfields/scopes.js');
 
 class DMChannel extends BaseChannel{
-    constructor(data, addon){
+    constructor(data, addon, structureHandler){
         super(data, addon);
         this.id = data.id;
         const addonUserManager = UserManager.get(addon.name) || new Save();
@@ -16,7 +16,7 @@ class DMChannel extends BaseChannel{
         this.update = function(){
             return new Promise((resolve, reject) => {
                 data.fetch().then(ch => {
-                    resolve(new DMChannel(ch, addon));
+                    resolve(structureHandler.createStructure('DMChannel', [ch, addon]));
                 }).catch(reject);
             });
         }
