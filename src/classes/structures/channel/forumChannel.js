@@ -3,12 +3,11 @@ const CategoryChannel = require('./categoryChannel.js');
 const { validatePermission, getAddonPermission, getResolvableDate } = require('../../../utils/functions.js');
 const scopes = require('../../../bitfields/scopes.js');
 const Save = require("../../save.js");
-const ThreadChannel = require('./threadChannel.js');
 
 const validAutoArchiveDates = [60, 1440, 10080, 4320];
 
 class ForumChannel extends GuildChannel{
-    constructor(data, addon, guild){
+    constructor(data, addon, guild, structureHandler){
         super(data, addon, guild);
         this.topic = data.topic;
         this.autoArchiveThreads = typeof data.defaultAutoArchiveDuration === 'number' ? data.defaultAutoArchiveDuration * 60 * 1000 : 0;
@@ -16,7 +15,7 @@ class ForumChannel extends GuildChannel{
         const guildThreads = Array.from(data.threads.cache.values());
         for(var i = 0; i < guildThreads.length; i++){
             var guildThread = guildThreads[i];
-            new ThreadChannel(guildThread, addon, guild);
+            structureHandler.createStructure('ThreadChannel', [guildThread, addon, guild]);
         }
         if(guild) guild.channels.set(this.id, this);
         if(validatePermission(getAddonPermission(addon.name), scopes.bitfield.CHANNELS)){
@@ -28,14 +27,14 @@ class ForumChannel extends GuildChannel{
             	if(typeof topic !== 'string') return reject('Topic argument must be a type of string');
                 if(typeof reason !== 'string') reason = undefined;
                 data.setTopic(topic, reason).then(ch => {
-                    resolve(new ForumChannel(ch, addon, guild));
+                    resolve(structureHandler.createStructure('ForumChannel', [ch, addon, guild]));
                 }).catch(reject);
             });
         }
         this.update = function(){
             return new Promise((resolve, reject) => {
                 data.fetch().then(ch => {
-                    resolve(new ForumChannel(ch, addon, guild));
+                    resolve(structureHandler.createStructure('ForumChannel', [ch, addon, guild]));
                 }).catch(reject);
             });
         }
@@ -90,7 +89,7 @@ class ForumChannel extends GuildChannel{
                         return arr;
                     }, []) : undefined
                 }).then(ch => {
-                    resolve(new ForumChannel(ch, addon, guild));
+                    resolve(structureHandler.createStructure('ForumChannel', [ch, addon, guild]));
                 }).catch(reject);
         	});
         }
@@ -120,7 +119,7 @@ class ForumChannel extends GuildChannel{
                     autoArchiveDuration: archiveDate,
                     reason: options.reason,
                 }).then(thread => {
-                    resolve(new ThreadChannel(thread, addon, this.guild));
+                    resolve(structureHandler.createStructure('ThreadChannel', [thread, addon, this.guild]));
                 }).catch(reject);
             });
         }
