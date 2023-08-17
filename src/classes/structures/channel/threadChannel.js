@@ -1,13 +1,12 @@
 const BaseChannel = require('./base.js');
 const { validatePermission, getAddonPermission, getResolvableDate } = require('../../../utils/functions.js');
 const { getMessageContent } = require('../../../utils/messageFunctions.js');
-const Message = require('../message.js');
 const scopes = require('../../../bitfields/scopes.js');
 const Save = require('../../save.js');
 const GuildMemberManager = require('../../managers/guildMemberManager.js');
 
 class ThreadChannel extends BaseChannel{
-    constructor(data, addon, guild){
+    constructor(data, addon, guild, structureHandler){
         super(data, addon);
         this.guild = guild;
         this.name = data.name;
@@ -58,7 +57,7 @@ class ThreadChannel extends BaseChannel{
                 if(typeof name !== 'string') return reject('The name of the channel must be a type of string');
                 if(typeof reason !== 'string') reason = undefined;
                 data.setName(name, reason).then(ch => {
-                    resolve(new ThreadChannel(ch, addon, guild));
+                    resolve(structureHandler.createStructure('ThreadChannel', [ch, addon, guild]));
                 }).catch(reject);
             });
         }
@@ -77,7 +76,7 @@ class ThreadChannel extends BaseChannel{
                 if(data.joined === true) resolve(this);
                 else {
                     data.join().then(ch => {
-                        resolve(new ThreadChannel(ch, addon, guild));
+                        resolve(structureHandler.createStructure('ThreadChannel', [ch, addon, guild]));
                     }).catch(reject);
                 }
             });
@@ -88,7 +87,7 @@ class ThreadChannel extends BaseChannel{
                 if(data.joined === false) resolve(this);
                 else {
                     data.leave().then(ch => {
-                        resolve(new ThreadChannel(ch, addon, guild));
+                        resolve(structureHandler.createStructure('ThreadChannel', [ch, addon, guild]));
                     }).catch(reject);
                 }
             });
@@ -101,7 +100,7 @@ class ThreadChannel extends BaseChannel{
                 }
                 if(typeof reason !== 'string') reason = undefined;
                 data.pin(reason).then(ch => {
-                    resolve(new ThreadChannel(ch, addon, guild));
+                    resolve(structureHandler.createStructure('ThreadChannel', [ch, addon, guild]));
                 }).catch(reject);
             })
         }
@@ -113,7 +112,7 @@ class ThreadChannel extends BaseChannel{
                 }
                 if(typeof reason !== 'string') reason = undefined;
                 data.unpin(reason).then(ch => {
-                    resolve(new ThreadChannel(ch, addon, guild));
+                    resolve(structureHandler.createStructure('ThreadChannel', [ch, addon, guild]));
                 }).catch(reject);
             })
         }
@@ -122,14 +121,14 @@ class ThreadChannel extends BaseChannel{
                 if(content.length === 0) return reject(`At least one argument must be given`);
                 let _content = getMessageContent(content);
                 data.send(_content).then(msg => {
-                    resolve(new Message(msg, addon));
+                    resolve(structureHandler.createStructure('Message', [msg, addon]));
                 }).catch(reject);
             });
         }
         this.update = function(){
             return new Promise((resolve, reject) => {
                 data.fetch().then(ch => {
-                    resolve(new ThreadChannel(ch, addon, guild));
+                    resolve(structureHandler.createStructure('ThreadChannel', [ch, addon, guild]));
                 }).catch(reject);
             });
         }
@@ -137,7 +136,7 @@ class ThreadChannel extends BaseChannel{
             return new Promise((resolve, reject) => {
                 if(!validatePermission(getAddonPermission(addon.name), scopes.bitfield.MESSAGES)) return reject(`Missing messages scope in bitfield`);
                 if(typeof messageId !== 'string') return reject('Message id argument must be a type of string');
-                data.messages.fetch(messageId).then(msg => resolve(new Message(msg, addon))).catch(reject);
+                data.messages.fetch(messageId).then(msg => resolve(structureHandler.createStructure('Message', [msg, addon]))).catch(reject);
             });
         }
         this.setArchived = (archived, reason) => {
@@ -153,7 +152,7 @@ class ThreadChannel extends BaseChannel{
                     reason = undefined;
                 }
                 data.setArchived(archived, reason).then(ch => {
-                    resolve(new ThreadChannel(ch, addon, guild));
+                    resolve(structureHandler.createStructure('ThreadChannel', [ch, addon, guild]));
                 }).catch(reject);
             });
         }
@@ -165,7 +164,7 @@ class ThreadChannel extends BaseChannel{
                 const currentTimestamp = new Date().getTime();
                 var resolveDate = dateResolvable instanceof Date ? dateResolvable.getTime() - currentTimestamp : getResolvableDate(dateResolvable);
                 resolveDate = Math.round(resolveDate / (60*1000));
-                data.setAutoArchiveDuration(resolveDate, reason).then(ch => resolve(new ThreadChannel(ch, addon, guild))).catch(reject);
+                data.setAutoArchiveDuration(resolveDate, reason).then(ch => resolve(structureHandler.createStructure('ThreadChannel', [ch, addon, guild]))).catch(reject);
             });
         }
         this.setLocked = (locked, reason) => {
@@ -181,7 +180,7 @@ class ThreadChannel extends BaseChannel{
                     reason = undefined;
                 }
                 data.setLocked(locked, reason).then(ch => {
-                    resolve(new ThreadChannel(ch, addon, guild));
+                    resolve(structureHandler.createStructure('ThreadChannel', [ch, addon, guild]));
                 }).catch(reject);
             });
         }
@@ -192,7 +191,7 @@ class ThreadChannel extends BaseChannel{
                 if(typeof reason !== 'string') reason = undefined;
                 const currentTimestamp = new Date().getTime();
                 var resolveDate = dateResolvable instanceof Date ? dateResolvable.getTime() - currentTimestamp : getResolvableDate(dateResolvable);
-                data.setRateLimitPerUser(resolveDate, reason).then(ch => resolve(new ThreadChannel(ch, addon, guild))).catch(reject);
+                data.setRateLimitPerUser(resolveDate, reason).then(ch => resolve(structureHandler.createStructure('ThreadChannel', [ch, addon, guild]))).catch(reject);
             });
         }
         this.edit = function(options){
@@ -218,7 +217,7 @@ class ThreadChannel extends BaseChannel{
                     archived: typeof options.archived === 'boolean' ? options.archived : undefined,
                     locked: typeof options.locked === 'boolean' ? options.locked : undefined
                 }).then(ch => {
-                    resolve(new ThreadChannel(ch, addon, guild));
+                    resolve(structureHandler.createStructure('ThreadChannel', [ch, addon, guild]));
                 }).catch(reject);
         	});
         }
