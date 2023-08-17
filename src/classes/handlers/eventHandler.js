@@ -1,29 +1,10 @@
-const Member = require('../structures/member.js');
+const structureHandler = require('./structureHandler.js');
 const MemberManager = require('../managers/memberManager.js');
 const GuildMemberManager = require('../managers/guildMemberManager.js');
 const GuildManager = require('../managers/guildManager.js');
 const { getAddonPermission, validatePermission, passClient, wait } = require('../../utils/functions.js');
 const { eventListeners, addons } = require('../../utils/saves.js');
 const scopes = require('../../bitfields/scopes.js');
-const Save = require('../save.js');
-const TextChannel = require('../structures/channel/textChannel.js');
-const CategoryChannel = require('../structures/channel/categoryChannel.js');
-const VoiceChannel = require('../structures/channel/voiceChannel.js');
-const StageChannel = require('../structures/channel/stageChannel.js');
-const ForumChannel = require('../structures/channel/forumChannel.js');
-const DirectoryChannel = require('../structures/channel/directoryChannel.js');
-const BanEntry = require('../structures/entries/ban.js');
-const KickEntry = require('../structures/entries/kick.js');
-const MuteEntry = require('../structures/entries/mute.js');
-const BaseEntry = require('../structures/entries/base.js');
-const Message = require('../structures/message.js');
-const Guild = require('../structures/guild.js');
-const Emoji = require('../structures/emoji.js');
-const Role = require('../structures/role.js');
-const User = require('../structures/user.js');
-const Reaction = require('../structures/reaction.js');
-const ButtonInteraction =  require('../structures/interactions/buttonInteraction.js');
-const MenuInteraction = require('../structures/interactions/menuInteraction.js');
 const { ChannelType, AuditLogEvent } = require('discord.js');
 
 function createStructures(client, addons){
@@ -33,13 +14,13 @@ function createStructures(client, addons){
             var guild = guilds[i];
             for(var z = 0; z < addons.length; z++){
                 var addonInfo = addons[z].value;
-                new Guild(guild, addonInfo.addon);
+                structureHandler.createStructure('Guild', [guild, addonInfo.addon]);
                 if(addonInfo.verified === true && addonInfo.allowed === true){
                     await wait(1e3);
                     const members = Array.from(guild.members.cache.values());
                     for(var _i = 0; _i < members.length; _i++){
                         var _member = members[_i];
-                        new Member(_member, addonInfo.addon);
+                        structureHandler.createStructure('Member', [_member, addonInfo.addon]);
                     }
                 }
             }
@@ -70,8 +51,8 @@ function handleEvents(client, parser){
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
                 if(addonInfo.verified === true && addonInfo.allowed === true){
-                    const oldState = new Member(_oldState.member, addonInfo.addon).voice;
-                    const newState = new Member(_newState.member, addonInfo.addon).voice;
+                    const oldState = structureHandler.createStructure('Member', [_oldState.member, addonInfo.addon]).voice;
+                    const newState = structureHandler.createStructure('Member', [_newState.member, addonInfo.addon]).voice;
                     emitEvent(addonInfo.addon.name, 'voiceUpdate', scopes.bitfield.MEMBERS, oldState, newState);
                 } else {
                     continue;
@@ -86,7 +67,7 @@ function handleEvents(client, parser){
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
                 if(addonInfo.verified === true && addonInfo.allowed === true){
-                    const member = new Member(_member, addonInfo.addon);
+                    const member = structureHandler.createStructure('Member', [_member, addonInfo.addon]);
                     emitEvent(addonInfo.addon.name, 'memberAdd', scopes.bitfield.MEMBERS, member);
                 }
             }
@@ -99,9 +80,9 @@ function handleEvents(client, parser){
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
                 if(addonInfo.verified === true && addonInfo.allowed === true){
-                    const member = new Member(_member, addonInfo.addon);
+                    const member = structureHandler.createStructure('Member', [_member, addonInfo.addon]);
 
-                    const addonG = GuildMemberManager.get(addonInfo.addon.name) || new Save();
+                    const addonG = GuildMemberManager.get(addonInfo.addon.name) || structureHandler.createStructure('Save');
                     const g = addonG.get(_member.guild.id);
                     if(g){
                         g.delete(member.id);
@@ -109,7 +90,7 @@ function handleEvents(client, parser){
                         GuildMemberManager.set(addonInfo.addon.name, addonG);
                     }
 
-                    const addonMemberManager = MemberManager.get(addonInfo.addon.name) || new Save();
+                    const addonMemberManager = MemberManager.get(addonInfo.addon.name) || structureHandler.createStructure('Save');
                     const memberInfo = addonMemberManager.get(_member.id);
                     if(memberInfo){
                         memberInfo.delete(_member.guild.id);
@@ -134,7 +115,7 @@ function handleEvents(client, parser){
                 let addonInfo = _addons[z].value;
                 if(addonInfo.verified === true && addonInfo.allowed === true){
 
-                    const addonG = GuildMemberManager.get(addonInfo.addon.name) || new Save();
+                    const addonG = GuildMemberManager.get(addonInfo.addon.name) || structureHandler.createStructure('Save');
                     const g = addonG.get(_member.guild.id);
                     if(g){
                         g.delete(_member.id);
@@ -142,7 +123,7 @@ function handleEvents(client, parser){
                         GuildMemberManager.set(addonInfo.addon.name, addonG);
                     }
 
-                    const addonMemberManager = MemberManager.get(addonInfo.addon.name) || new Save();
+                    const addonMemberManager = MemberManager.get(addonInfo.addon.name) || structureHandler.createStructure('Save');
                     const memberInfo = addonMemberManager.get(_member.id);
                     if(memberInfo){
                         memberInfo.delete(guild.id);
@@ -154,10 +135,10 @@ function handleEvents(client, parser){
                         MemberManager.set(addonInfo.addon.name, addonMemberManager);
                     }
 
-                    const addonGuildManager = GuildManager.get(addonInfo.addon.name) || new Save();
+                    const addonGuildManager = GuildManager.get(addonInfo.addon.name) || structureHandler.createStructure('Save');
                     const guild = addonGuildManager.get(_member.guild.id);
 
-                    const kickEntry = new KickEntry(_member.user, guild, entry, addonInfo.addon);
+                    const kickEntry = structureHandler.createStructure('KickEntry', [_member.user, guild, entry, addonInfo.addon]);
 
                     emitEvent(addonInfo.addon.name, 'memberKick', scopes.bitfield.MEMBERS, kickEntry);
                 }
@@ -171,9 +152,9 @@ function handleEvents(client, parser){
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
                 if(addonInfo.verified === true && addonInfo.allowed === true){
-                    const oldMember = new Member(_oldMember, addonInfo.addon);
-                    const newMember = new Member(_newMember, addonInfo.addon);
-                    const muteEntry = new MuteEntry(auditLog, newMember, addonInfo.addon);
+                    const oldMember = structureHandler.createStructure('Member', [_oldMember, addonInfo.addon]);
+                    const newMember = structureHandler.createStructure('Member', [_newMember, addonInfo.addon]);
+                    const muteEntry = structureHandler.createStructure('MuteEntry', [auditLog, newMember, addonInfo.addon]);
                     emitEvent(addonInfo.addon.name, 'memberMuteAdd', scopes.bitfield.MEMBERS, oldMember, newMember, muteEntry);
                 }
             }
@@ -186,9 +167,9 @@ function handleEvents(client, parser){
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
                 if(addonInfo.verified === true && addonInfo.allowed === true){
-                    const oldMember = new Member(_oldMember, addonInfo.addon);
-                    const newMember = new Member(_newMember, addonInfo.addon);
-                    const muteEntry = new MuteEntry(auditLog, newMember, addonInfo.addon);
+                    const oldMember = structureHandler.createStructure('Member', [_oldMember, addonInfo.addon]);
+                    const newMember = structureHandler.createStructure('Member', [_newMember, addonInfo.addon]);
+                    const muteEntry = structureHandler.createStructure('Member', [auditLog, newMember, addonInfo.addon]);
                     emitEvent(addonInfo.addon.name, 'memberMuteRemove', scopes.bitfield.MEMBERS, oldMember, newMember, muteEntry);
                 }
             }
@@ -202,8 +183,8 @@ function handleEvents(client, parser){
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
                 if(addonInfo.verified === true && addonInfo.allowed === true){
-                    const oldMember = new Member(_oldMember, addonInfo.addon);
-                    const newMember = new Member(_newMember, addonInfo.addon);
+                    const oldMember = structureHandler.createStructure('Member', [_oldMember, addonInfo.addon]);
+                    const newMember = structureHandler.createStructure('Member', [_newMember, addonInfo.addon]);
                     if(oldMember.nickname !== newMember.nickname){
                         _newMember.guild.fetchAuditLogs({
                             limit: 1,
@@ -215,7 +196,7 @@ function handleEvents(client, parser){
                             
                             if(log.targetId !== newMember.id) return;
 
-                            const entry = new BaseEntry(log, newMember, addonInfo.addon);
+                            const entry = structureHandler.createStructure('BaseEntry', [log, newMember, addonInfo.addon]);
 
                             emitEvent(addonInfo.addon.name, 'nicknameChange', scopes.bitfield.MEMBERS, oldMember, newMember, entry);
                         }).catch(err => {});
@@ -230,7 +211,7 @@ function handleEvents(client, parser){
 
                             if(log.targetId !== newMember.id) return;
 
-                            const entry = new BaseEntry(log, newMember, newMember.guild, addonInfo.addon);
+                            const entry = structureHandler.createStructure('BaseEntry', [log, newMember, newMember.guild, addonInfo.addon]);
 
                             emitEvent(addonInfo.addon.name, 'roleChange', scopes.bitfield.MEMBERS, oldMember, newMember, entry);
                         }).catch(err => {});
@@ -246,8 +227,8 @@ function handleEvents(client, parser){
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
                 if(addonInfo.verified === true && addonInfo.allowed === true){
-                    const oldUser = new User(_oldUser, addonInfo.addon, false);
-                    const newUser = new User(_newUser, addonInfo.addon, false);
+                    const oldUser = structureHandler.createStructure('User', [_oldUser, addonInfo.addon, false]);
+                    const newUser = structureHandler.createStructure('User', [_newUser, addonInfo.addon, false]);
                     if(oldUser.username !== newUser.username){
                         emitEvent(addonInfo.addon.name, 'usernameChange', scopes.bitfield.MEMBERS, oldUser, newUser);
                     } else if(oldUser.discriminator !== newUser.discriminator){
@@ -268,7 +249,7 @@ function handleEvents(client, parser){
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
                 if(addonInfo.verified === true && addonInfo.allowed === true){
-                    const addonG = GuildMemberManager.get(addonInfo.addon.name) || new Save();
+                    const addonG = GuildMemberManager.get(addonInfo.addon.name) || structureHandler.createStructure('Save');
                     const g = addonG.get(ban.guild.id);
                     if(g){
                         g.delete(ban.user.id);
@@ -276,7 +257,7 @@ function handleEvents(client, parser){
                         GuildMemberManager.set(addonInfo.addon.name, addonG);
                     }
 
-                    const addonMemberManager = MemberManager.get(addonInfo.addon.name) || new Save();
+                    const addonMemberManager = MemberManager.get(addonInfo.addon.name) || structureHandler.createStructure('Save');
                     const memberInfo = addonMemberManager.get(ban.user.id);
                     if(memberInfo){
                         memberInfo.delete(ban.guild.id);
@@ -288,10 +269,10 @@ function handleEvents(client, parser){
                         MemberManager.set(addonInfo.addon.name, addonMemberManager);
                     }
 
-                    const addonGuildManager = GuildManager.get(addonInfo.addon.name) || new Save();
+                    const addonGuildManager = GuildManager.get(addonInfo.addon.name) || structureHandler.createStructure('Save');
                     const guild = addonGuildManager.get(ban.guild.id);
 
-                    const banEntry = new BanEntry(ban.user, guild, entry, addonInfo.addon);
+                    const banEntry = structureHandler.createStructure('BanEntry', [ban.user, guild, entry, addonInfo.addon]);
 
                     emitEvent(addonInfo.addon.name, 'memberBan', scopes.bitfield.MEMBERS, banEntry);
                 }
@@ -305,7 +286,7 @@ function handleEvents(client, parser){
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
                 if(addonInfo.verified === true && addonInfo.allowed === true){
-                    const member = new Member(_member, addonInfo.addon);
+                    const member = structureHandler.createStructure('Member', [_member, addonInfo.addon]);
                     emitEvent(addonInfo.addon.name, 'levelUp', scopes.bitfield.MEMBERS, member);
                 }
             }
@@ -320,21 +301,21 @@ function handleEvents(client, parser){
                 if(addonInfo.verified === true && addonInfo.allowed === true){
                     let channel = undefined;
 
-                    const addonGuildManager = GuildManager.get(addonInfo.addon.name) || new Save();
+                    const addonGuildManager = GuildManager.get(addonInfo.addon.name) || structureHandler.createStructure('Save');
                     const guild = addonGuildManager.get(_channel.guild.id);
 
                     if(_channel.type === ChannelType.GuildText || _channel.type === ChannelType.GuildAnnouncement){
-                        channel = new TextChannel(_channel, addonInfo.addon, guild);
+                        channel = structureHandler.createStructure('TextChannel', [_channel, addonInfo.addon, guild]);
                     } else if(_channel.type === ChannelType.GuildCategory){
-                        channel = new CategoryChannel(_channel, addonInfo.addon, guild);
+                        channel = structureHandler.createStructure('CategoryChannel', [_channel, addonInfo.addon, guild]);
                     } else if(_channel.type === ChannelType.GuildVoice){
-                        channel = new VoiceChannel(_channel, addonInfo.addon, guild);
+                        channel = structureHandler.createStructure('VoiceChannel', [_channel, addonInfo.addon, guild]);
                     } else if(_channel.type === ChannelType.GuildStageVoice){
-                        channel = new StageChannel(_channel, addonInfo.addon, guild);
+                        channel = structureHandler.createStructure('StageChannel', [_channel, addonInfo.addon, guild]);
                     } else if(_channel.type === ChannelType.GuildForum){
-                        channel = new ForumChannel(_channel, addonInfo.addon, guild);
+                        channel = structureHandler.createStructure('ForumChannel', [_channel, addonInfo.addon, guild]);
                     } else if(_channel.type === ChannelType.GuildDirectory){
-                        channel = new DirectoryChannel(_channel, addonInfo.addon, guild);
+                        channel = structureHandler.createStructure('DirectoryChannel', [_channel, addonInfo.addon, guild]);
                     }
                     emitEvent(addonInfo.addon.name, 'ticketClose', scopes.bitfield.MEMBERS, channel, transcript);
                 }
@@ -348,12 +329,12 @@ function handleEvents(client, parser){
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
                 if(addonInfo.verified === true && addonInfo.allowed === true){
-                    const chunkedMembers = new Save();
+                    const chunkedMembers = structureHandler.createStructure('Save');
                     for(var i = 0; i < members.length; i++){
                         var member = members[i];
-                        const _member = new Member(member, addonInfo.addon);
+                        const _member = structureHandler.createStructure('Member', [member, addonInfo.addon]);
                         chunkedMembers.set(_member.id, _member);
-                        const addonG = GuildMemberManager.get(addonInfo.addon.name) || new Save();
+                        const addonG = GuildMemberManager.get(addonInfo.addon.name) || structureHandler.createStructure('Save');
                         const g = addonG.get(guild.id);
                         if(g){
                             g.delete(member.id);
@@ -361,7 +342,7 @@ function handleEvents(client, parser){
                             GuildMemberManager.set(addonInfo.addon.name, addonG);
                         }
 
-                        const addonMemberManager = MemberManager.get(addonInfo.addon.name) || new Save();
+                        const addonMemberManager = MemberManager.get(addonInfo.addon.name) || structureHandler.createStructure('Save');
                         const memberInfo = addonMemberManager.get(member.id);
                         if(memberInfo){
                             memberInfo.delete(guild.id);
@@ -395,7 +376,7 @@ function handleEvents(client, parser){
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
                 if(addonInfo.verified === true && addonInfo.allowed === true){
-                    const msg = new Message(message, addonInfo.addon);
+                    const msg = structureHandler.createStructure('Message', [message, addonInfo.addon]);
                     emitEvent(addonInfo.addon.name, 'message', scopes.bitfield.MESSAGES, msg);
                 }
             }
@@ -413,8 +394,8 @@ function handleEvents(client, parser){
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
                 if(addonInfo.verified === true && addonInfo.allowed === true){
-                    const executor = new User(_executor, addonInfo.addon, false);
-                    const message = new Message(_message, addonInfo.addon);
+                    const executor = structureHandler.createStructure('User', [_executor, addonInfo.addon, false]);
+                    const message = structureHandler.createStructure('Message', [_message, addonInfo.addon]);
                     emitEvent(addonInfo.addon.name, 'messageDelete', scopes.bitfield.MESSAGES, message, executor);
                 }
             }
@@ -436,8 +417,8 @@ function handleEvents(client, parser){
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
                 if(addonInfo.verified === true && addonInfo.allowed === true){
-                    const oldMessage = new Message(_oldMessage, addonInfo.addon);
-                    const newMessage = new Message(_newMessage, addonInfo.addon);
+                    const oldMessage = structureHandler.createStructure('Message', [_oldMessage, addonInfo.addon]);
+                    const newMessage = structureHandler.createStructure('Message', [_newMessage, addonInfo.addon]);
                     emitEvent(addonInfo.addon.name, 'messageUpdate', scopes.bitfield.MESSAGES, oldMessage, newMessage);
                 }
             }
@@ -450,8 +431,8 @@ function handleEvents(client, parser){
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
                 if(addonInfo.verified === true && addonInfo.allowed === true){
-                    const user = new User(_user, addonInfo.addon, false);
-                    const reaction = new Reaction(_reaction, addonInfo.addon, user);
+                    const user = structureHandler.createStructure('User', [_user, addonInfo.addon, false]);
+                    const reaction = structureHandler.createStructure('Reaction', [_reaction, addonInfo.addon, user]);
                     emitEvent(addonInfo.addon.name, 'reactionAdd', scopes.bitfield.EMOJIS, reaction);
                 }
             }
@@ -468,8 +449,8 @@ function handleEvents(client, parser){
                         await wait(400);
                         await _reaction.message.fetch();
                     } catch {}
-                    const user = new User(_user, addonInfo.addon, false);
-                    const reaction = new Reaction(_reaction, addonInfo.addon, user);
+                    const user = structureHandler.createStructure('User', [_user, addonInfo.addon, false]);
+                    const reaction = structureHandler.createStructure('Reaction', [_reaction, addonInfo.addon, user]);
                     emitEvent(addonInfo.addon.name, 'reactionDelete', scopes.bitfield.EMOJIS, reaction);
                 }
             }
@@ -506,10 +487,10 @@ function handleEvents(client, parser){
 
                         if(log.targetId !== _newGuild.id) return;
 
-                        const oldGuild = new Guild(_oldGuild, addonInfo.addon);
+                        const oldGuild = structureHandler.createStructure('Guild', [_oldGuild, addonInfo.addon]);
                         await createStructures();
                         const newGuild = addonInfo.addon.guilds.get(_newGuild.id);
-                        const entry = new BaseEntry(log, undefined, newGuild, addonInfo.addon);
+                        const entry = structureHandler.createStructure('BaseEntry', [log, undefined, newGuild, addonInfo.addon]);
 
                         if(oldGuild.name !== newGuild.name){
                             emitEvent(addonInfo.addon.name, 'guildNameChange', scopes.bitfield.GUILDS, oldGuild, newGuild, entry);
@@ -531,12 +512,12 @@ function handleEvents(client, parser){
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
                 if(addonInfo.verified === true && addonInfo.allowed === true){
-                    const addonGuildManager = GuildManager.get(addonInfo.addon.name) || new Save();
+                    const addonGuildManager = GuildManager.get(addonInfo.addon.name) || structureHandler.createStructure('Save');
                     const oldServer = addonGuildManager.get(_oldServer.id);
-                    const addonGuildMemberManager = GuildMemberManager.get(addonInfo.addon.name) || new Save();
+                    const addonGuildMemberManager = GuildMemberManager.get(addonInfo.addon.name) || structureHandler.createStructure('Save');
                     addonGuildMemberManager.delete(_oldServer.id);
                     GuildMemberManager.set(addonInfo.addon.name, addonGuildMemberManager);
-                    const addonMemberManager = MemberManager.get(addonInfo.addon.name) || new Save();
+                    const addonMemberManager = MemberManager.get(addonInfo.addon.name) || structureHandler.createStructure('Save');
                     const members = addonMemberManager.filter(m => m instanceof Save ? typeof m.get(_oldServer.id) !== 'undefined' : false);
                     const memberIds = Array.from(members.keys());
                     for(var i = 0; i < memberIds.length; i++){
@@ -572,10 +553,10 @@ function handleEvents(client, parser){
                         
                         if(log.targetId !== _emoji.id) return;
 
-                        const guild = new Guild(_emoji.guild, addonInfo.addon);
+                        const guild = structureHandler.createStructure('Guild', [_emoji.guild, addonInfo.addon]);
                         const emoji = guild.emojis.filter(e => e.value.id === _emoji.id).first();
 
-                        const entry = new BaseEntry(log, undefined, guild, addonInfo.addon);
+                        const entry = structureHandler.createStructure('BaseEntry', [log, undefined, guild, addonInfo.addon]);
 
                         emitEvent(addonInfo.addon.name, 'emojiAdd', scopes.bitfield.EMOJIS, emoji, entry);
                     }).catch(err => {});
@@ -601,12 +582,12 @@ function handleEvents(client, parser){
                         
                         if(log.targetId !== _newEmoji.id) return;
 
-                        const guild = new Guild(_newEmoji.guild, addonInfo.addon);
+                        const guild = structureHandler.createStructure('Guild', [_newEmoji.guild, addonInfo.addon]);
                         const emoji = guild.emojis.filter(e => e.value.id === _newEmoji.id).first();
-                        const oldEmoji = new Emoji(_oldEmoji, addonInfo.addon, undefined);
+                        const oldEmoji = structureHandler.createStructure('Emoji', [_oldEmoji, addonInfo.addon, undefined]);
                         oldEmoji.guild = guild;
 
-                        const entry = new BaseEntry(log, undefined, guild, addonInfo.addon);
+                        const entry = structureHandler.createStructure('BaseEntry', [log, undefined, guild, addonInfo.addon]);
 
                         emitEvent(addonInfo.addon.name, 'emojiUpdate', scopes.bitfield.EMOJIS, oldEmoji, emoji, entry);
                     }).catch(err => {});
@@ -632,11 +613,11 @@ function handleEvents(client, parser){
                         
                         if(log.targetId !== _emoji.id) return;
 
-                        const guild = new Guild(_emoji.guild, addonInfo.addon);
-                        const oldEmoji = new Emoji(_emoji, addonInfo.addon, undefined);
+                        const guild = structureHandler.createStructure('Guild', [_emoji.guild, addonInfo.addon]);
+                        const oldEmoji = structureHandler.createStructure('Emoji', [_emoji, addonInfo.addon, undefined]);
                         oldEmoji.guild = guild;
 
-                        const entry = new BaseEntry(log, undefined, guild, addonInfo.addon);
+                        const entry = structureHandler.createStructure('BaseEntry', [log, undefined, guild, addonInfo.addon]);
 
                         emitEvent(addonInfo.addon.name, 'emojiDelete', scopes.bitfield.EMOJIS, oldEmoji, entry);
                     }).catch(err => {});;
@@ -662,10 +643,10 @@ function handleEvents(client, parser){
                         
                         if(log.targetId !== _channel.id) return;
 
-                        const guild = new Guild(_channel.guild, addonInfo.addon);
+                        const guild = structureHandler.createStructure('Guild', [_channel.guild, addonInfo.addon]);
                         const channel = guild.channels.filter(e => e.value.id === _channel.id).first();
 
-                        const entry = new BaseEntry(log, undefined, guild, addonInfo.addon);
+                        const entry = structureHandler.createStructure('BaseEntry', [log, undefined, guild, addonInfo.addon]);
 
                         emitEvent(addonInfo.addon.name, 'channelAdd', scopes.bitfield.CHANNELS, channel, entry);
                     }).catch(err => {});
@@ -692,37 +673,37 @@ function handleEvents(client, parser){
                         if(log.targetId !== _newChannel.id) return;
                         
                         let newChannel;
-                        const guild = new Guild(_newChannel.guild, addonInfo.addon);
+                        const guild = structureHandler.createStructure('Guild', [_newChannel.guild, addonInfo.addon]);
                         if(_newChannel.type === ChannelType.GuildText || _newChannel.type === ChannelType.GuildAnnouncement){
-                            newChannel = new TextChannel(_newChannel, addonInfo.addon, guild);
+                            newChannel = structureHandler.createStructure('TextChannel', [_newChannel, addonInfo.addon, guild]);
                         } else if(_newChannel.type === ChannelType.GuildCategory){
-                            newChannel = new CategoryChannel(_newChannel, addonInfo.addon, guild);
+                            newChannel = structureHandler.createStructure('CategoryChannel', [_newChannel, addonInfo.addon, guild]);
                         } else if(_newChannel.type === ChannelType.GuildVoice){
-                            newChannel = new VoiceChannel(_newChannel, addonInfo.addon, guild);
+                            newChannel = structureHandler.createStructure('VoiceChannel', [_newChannel, addonInfo.addon, guild]);
                         } else if(_newChannel.type === ChannelType.GuildStageVoice){
-                            newChannel = new StageChannel(_newChannel, addonInfo.addon, guild);
+                            newChannel = structureHandler.createStructure('StageChannel', [_newChannel, addonInfo.addon, guild]);
                         } else if(_newChannel.type === ChannelType.GuildForum){
-                            newChannel = new ForumChannel(_newChannel, addonInfo.addon, guild);
+                            newChannel = structureHandler.createStructure('ForumChannel', [_newChannel, addonInfo.addon, guild]);
                         } else if(_newChannel.type === ChannelType.GuildDirectory){
-                            newChannel = new DirectoryChannel(_newChannel, addonInfo.addon, guild);
+                            newChannel = structureHandler.createStructure('DirectoryChannel', [_newChannel, addonInfo.addon, guild]);
                         }
                         let oldChannel;
                         if(_oldChannel.type === ChannelType.GuildText || _oldChannel.type === ChannelType.GuildAnnouncement){
-                            oldChannel = new TextChannel(_oldChannel, addonInfo.addon, undefined);
+                            oldChannel = structureHandler.createStructure('TextChannel', [_oldChannel, addonInfo.addon, undefined]);
                         } else if(_oldChannel.type === ChannelType.GuildCategory){
-                            oldChannel = new CategoryChannel(_oldChannel, addonInfo.addon, undefined);
+                            oldChannel = structureHandler.createStructure('CategoryChannel', [_oldChannel, addonInfo.addon, undefined]);
                         } else if(_oldChannel.type === ChannelType.GuildVoice){
-                            oldChannel = new VoiceChannel(_oldChannel, addonInfo.addon, undefined);
+                            oldChannel = structureHandler.createStructure('VoiceChannel', [_oldChannel, addonInfo.addon, undefined]);
                         } else if(_oldChannel.type === ChannelType.GuildStageVoice){
-                            oldChannel = new StageChannel(_oldChannel, addonInfo.addon, undefined);
+                            oldChannel = structureHandler.createStructure('StageChannel', [_oldChannel, addonInfo.addon, undefined]);
                         } else if(_oldChannel.type === ChannelType.GuildForum){
-                            oldChannel = new ForumChannel(_oldChannel, addonInfo.addon, undefined);
+                            oldChannel = structureHandler.createStructure('ForumChannel', [_oldChannel, addonInfo.addon, undefined]);
                         } else if(_oldChannel.type === ChannelType.GuildDirectory){
-                            oldChannel = new DirectoryChannel(_oldChannel, addonInfo.addon, undefined);
+                            oldChannel = structureHandler.createStructure('DirectoryChannel', [_oldChannel, addonInfo.addon, undefined]);
                         }
                         oldChannel.guild = guild;
 
-                        const entry = new BaseEntry(log, undefined, guild, addonInfo.addon);
+                        const entry = structureHandler.createStructure('BaseEntry', [log, undefined, guild, addonInfo.addon]);
 
                         emitEvent(addonInfo.addon.name, 'channelUpdate', scopes.bitfield.CHANNELS, oldChannel, newChannel, entry);
                     }).catch(err => {});
@@ -738,7 +719,7 @@ function handleEvents(client, parser){
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
                 if(addonInfo.verified === true && addonInfo.allowed === true){
-                    const guild = new Guild(_channel.guild, addonInfo.addon);
+                    const guild = structureHandler.createStructure('Guild', [_channel.guild, addonInfo.addon]);
                     guild.channels.delete(_channel.id);
                     addonInfo.addon.channels.delete(_channel.id);
                     _channel.guild.fetchAuditLogs({
@@ -753,21 +734,21 @@ function handleEvents(client, parser){
 
                         let oldChannel;
                         if(_channel.type === ChannelType.GuildText || _channel.type === ChannelType.GuildAnnouncement){
-                            oldChannel = new TextChannel(_channel, addonInfo.addon, undefined);
+                            oldChannel = structureHandler.createStructure('TextChannel', [_channel, addonInfo.addon, undefined]);
                         } else if(_channel.type === ChannelType.GuildCategory){
-                            oldChannel = new CategoryChannel(_channel, addonInfo.addon, undefined);
+                            oldChannel = structureHandler.createStructure('CategoryChannel', [_channel, addonInfo.addon, undefined]);
                         } else if(_channel.type === ChannelType.GuildVoice){
-                            oldChannel = new VoiceChannel(_channel, addonInfo.addon, undefined);
+                            oldChannel = structureHandler.createStructure('VoiceChannel', [_channel, addonInfo.addon, undefined]);
                         } else if(_channel.type === ChannelType.GuildStageVoice){
-                            oldChannel = new StageChannel(_channel, addonInfo.addon, undefined);
+                            oldChannel = structureHandler.createStructure('StageChannel', [_channel, addonInfo.addon, undefined]);
                         } else if(_channel.type === ChannelType.GuildForum){
-                            oldChannel = new ForumChannel(_channel, addonInfo.addon, undefined);
+                            oldChannel = structureHandler.createStructure('ForumChannel', [_channel, addonInfo.addon, undefined]);
                         } else if(_channel.type === ChannelType.GuildDirectory){
-                            oldChannel = new DirectoryChannel(_channel, addonInfo.addon, undefined);
+                            oldChannel = structureHandler.createStructure('DirectoryChannel', [_channel, addonInfo.addon, undefined]);
                         }
                         oldChannel.guild = guild;
 
-                        const entry = new BaseEntry(log, undefined, guild, addonInfo.addon);
+                        const entry = structureHandler.createStructure('BaseEntry', [log, undefined, guild, addonInfo.addon]);
 
                         emitEvent(addonInfo.addon.name, 'channelDelete', scopes.bitfield.CHANNELS, oldChannel, entry);
                     }).catch(err => {});
@@ -793,10 +774,10 @@ function handleEvents(client, parser){
                         
                         if(log.targetId !== _role.id) return;
                         
-                        const guild = new Guild(_role.guild, addonInfo.addon);
+                        const guild = structureHandler.createStructure('Guild', [_role.guild, addonInfo.addon]);
                         const role = guild.roles.filter(e => e.value.id === _role.id).first();
 
-                        const entry = new BaseEntry(log, undefined, guild, addonInfo.addon);
+                        const entry = structureHandler.createStructure('BaseEntry', [log, undefined, guild, addonInfo.addon]);
 
                         emitEvent(addonInfo.addon.name, 'roleAdd', scopes.bitfield.ROLES, role, entry);
                     }).catch(err => {});
@@ -822,12 +803,12 @@ function handleEvents(client, parser){
                         
                         if(log.targetId !== _newRole.id) return;
 
-                        const guild = new Guild(_newRole.guild, addonInfo.addon);
+                        const guild = structureHandler.createStructure('Guild', [_newRole.guild, addonInfo.addon]);
                         const role = guild.roles.filter(e => e.value.id === _newRole.id).first();
-                        const oldRole = new Role(_oldRole, addonInfo.addon, undefined);
+                        const oldRole = structureHandler.createStructure('Role', [_oldRole, addonInfo.addon, undefined]);
                         oldRole.guild = guild;
 
-                        const entry = new BaseEntry(log, undefined, guild, addonInfo.addon);
+                        const entry = structureHandler.createStructure('BaseEntry', [log, undefined, guild, addonInfo.addon]);
 
                         emitEvent(addonInfo.addon.name, 'roleUpdate', scopes.bitfield.ROLES, oldRole, role, entry);
                     }).catch(err => {});
@@ -853,11 +834,11 @@ function handleEvents(client, parser){
                         
                         if(log.targetId !== _role.id) return;
 
-                        const guild = new Guild(_role.guild, addonInfo.addon);
-                        const oldRole = new Role(_role, addonInfo.addon, undefined);
+                        const guild = structureHandler.createStructure('Guild', [_role.guild, addonInfo.addon]);
+                        const oldRole = structureHandler.createStructure('Role', [_role, addonInfo.addon, undefined]);
                         oldRole.guild = guild;
 
-                        const entry = new BaseEntry(log, undefined, guild, addonInfo.addon);
+                        const entry = structureHandler.createStructure('BaseEntry', [log, undefined, guild, addonInfo.addon]);
 
                         emitEvent(addonInfo.addon.name, 'roleDelete', scopes.bitfield.ROLES, oldRole, entry);
                     }).catch(err => {});
@@ -873,7 +854,7 @@ function handleEvents(client, parser){
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
                 if(addonInfo.verified === true && addonInfo.allowed === true){
-                    const buttonInteraction = new ButtonInteraction(interaction, addonInfo.addon);
+                    const buttonInteraction = structureHandler.createStructure('ButtonInteraction', [interaction, addonInfo.addon]);
                     emitEvent(addonInfo.addon.name, 'buttonClick', scopes.bitfield.INTERACTIONS, buttonInteraction);
                 }
             }
@@ -887,7 +868,7 @@ function handleEvents(client, parser){
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
                 if(addonInfo.verified === true && addonInfo.allowed === true){
-                    const menuInteraction = new MenuInteraction(interaction, addonInfo.addon);
+                    const menuInteraction = structureHandler.createStructure('MenuInteraction', [interaction, addonInfo.addon]);
                     emitEvent(addonInfo.addon.name, 'menuSelect', scopes.bitfield.INTERACTIONS, menuInteraction);
                 }
             }
