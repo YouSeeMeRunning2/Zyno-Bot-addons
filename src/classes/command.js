@@ -6,7 +6,7 @@ const { getClient } = require('../utils/functions.js');
 const { getMessageContent } = require('../utils/messageFunctions.js');
 const { ApplicationCommandOptionType, ChannelType } = require('discord.js');
 
-function commandResolver(data, save, structureHandler){
+function commandResolver(data, save, structureHandler, addonData){
     return data.reduce((arr, item) => {
         var add;
         if(item.type === ApplicationCommandOptionType.Subcommand || item.type === ApplicationCommandOptionType.SubcommandGroup){
@@ -84,7 +84,7 @@ class Command{
         this.message = interaction === false ? structureHandler.createStructure('Message', [data, addonData.addon]) : undefined;
         if(interaction === false) this.args.push(...(data.content || '').substring(client.config.prefix.length).split(' '));
         else {
-            let args = commandResolver(data.options.data, this.options);
+            let args = commandResolver(data.options.data, this.options, structureHandler, addonData);
             this.args = [registeredCommandData.name, ...args];
         }
         this.isSlashCommand = () => {
