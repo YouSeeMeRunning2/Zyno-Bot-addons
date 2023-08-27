@@ -55,6 +55,7 @@ class ButtonBuilder{
         if(!validateURL(url)) throw new Error(`The url must be a valid url`);
         this.data.style = ButtonStyle.Link;
         this.data.url = url;
+        this.data.custom_id = undefined;
         return this;
     }
     setEmoji(emoji){
