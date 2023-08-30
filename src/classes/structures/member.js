@@ -14,8 +14,8 @@ let client;
 
 class Member extends User{
 	constructor(guildMember, addon, structureHandler){
-        super(guildMember.user, addon, false, structureHandler);
         client = getClient();
+        super((guildMember.user || client.users.cache.get(guildMember.id)), addon, false, structureHandler);
         const addonMemberManager = MemberManager.get(addon.name) || new Save();
         const memberManager = addonMemberManager.get(guildMember.id) || new Save();
         memberManager.set(guildMember.guild.id, this);
