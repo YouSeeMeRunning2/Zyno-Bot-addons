@@ -25,8 +25,8 @@ class ActionRowBuilder{
                 if(typeof arg.data.custom_id !== 'string') throw new Error(`A custom id must be set for the menu`);
                 this.components.push(new DiscordJS.StringSelectMenuBuilder(arg.toJSON()));
             }
-            return this;
         }
+        return this;
     }
     components = [];
 };
