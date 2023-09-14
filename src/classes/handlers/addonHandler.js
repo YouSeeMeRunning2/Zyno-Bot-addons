@@ -1,9 +1,11 @@
 const { ValueSaver } = require('valuesaver');
 const CommandHandler = require('./commandHandler.js');
 const Command = require('../command.js');
+const CommandBuilder = require('../builders/commandBuilder.js');
 const { getPermissionsString, generateId } = require('../../utils/functions.js');
 const { getClientParser } = require('../../utils/parser.js');
 const { createStructures } = require('./eventHandler.js');
+const structureHandler = require('./structureHandler.js');
 const { addons, addonCreate } = require('../../utils/saves.js');
 const EventEmitter = require('events');
 const fs = require('fs/promises');
@@ -137,7 +139,7 @@ class CommandRegister extends EventEmitter{
         this.timeout = setTimeout(async () => {
             this.timeout = undefined;
             var commands = this.queue.map(q => q.command);
-            commands.push(...this.addonCommands.toReadableArray().map(a => a.value));
+            commands.push(...this.addonCommands.toReadableArray().map(a => new CommandBuilder(a.value.command).toJSON()));
             for(var i = 0; i < commands.length; i++){
                 delete commands[i]['overwrite'];
             }
@@ -159,10 +161,10 @@ class CommandRegister extends EventEmitter{
                     addons.get(commandQueue.addon).addon.commands.set(commandQueue.command.name, cmd);
                 }
                 clientParser.getClient().addons.writeValueSaver(this.addonCommands.toReadableArray());
-            } catch {
+            } catch(err) {
                 for(var i = 0; i < this.queue.length; i++){
                     var commandQueue = this.queue[i];
-                    commandQueue.functions.reject("The command couldn't be registered due to an error received from the Discord API");
+                    commandQueue.functions.reject(err);
                 }
             }
             this.queue = [];
@@ -190,7 +192,7 @@ class InteractionHandler extends EventEmitter{
             if(typeof cmd.command.default_member_permissions === 'string'){
                 if(!commandData.member.permissions.has(cmd.command.default_member_permissions)) return;
             }
-            var getExecuteableCommand = new Command(commandData, interaction, cmd.command, addon);
+            var getExecuteableCommand = new Command(commandData, interaction, cmd.command, addon, structureHandler);
             cmd.command.passedClass.emit('execute', getExecuteableCommand);
         });
     }
