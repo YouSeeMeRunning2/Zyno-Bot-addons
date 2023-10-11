@@ -2,10 +2,13 @@ const GuildManager = require('../../managers/guildManager.js');
 const GuildMemberManager = require('../../managers/guildMemberManager.js');
 const { getMessageContent } = require('../../../utils/messageFunctions.js');
 const Save = require('../../save.js');
+const FormBuilder = require('../../builders/formBuilder.js');
+const { ModalBuilder, ActionRowBuilder, TextInputBuilder } = require('discord.js');
 
 class ButtonInteraction{
     constructor(data, addon, structureHandler){
         const addonGuildManager = GuildManager.get(addon.name) || new Save();
+        this.type = "Button";
         this.guild = addonGuildManager.get(data.guildId);
         this.guildId = data.guildId;
         this.channel = this.guild ? this.guild.channels.get(data.channelId) : null;
@@ -17,6 +20,15 @@ class ButtonInteraction{
         this.message = structureHandler.createStructure('Message', [data.message, addon]);
         this.customId = data.customId;
         this.id = data.id;
+        this.isButton = () => {
+            return this.type === "Button";
+        };
+        this.isMenu = () => {
+            return this.type === "Menu";
+        };
+        this.isForm = () => {
+            return this.type === "Form";
+        };
         this.deferUpdate = function(){
             return new Promise((resolve, reject) => {
                 data.deferUpdate().then(() => resolve()).catch(reject)
@@ -52,6 +64,17 @@ class ButtonInteraction{
                 if(content.length === 0) return reject(`At least one argument must be given`);
                 let _content = getMessageContent(content);
                 data.update({..._content, fetchReply: true}).then(msg => resolve(structureHandler.createStructure('Message', [msg, addon]))).catch(reject);
+            });
+        };
+        this.sendForm = function(form){
+            return new Promise((resolve, reject) => {
+                if(!(form instanceof FormBuilder)) return reject(`The form must be an instance of the FormBuilder class`);
+                let formJSON = form.toJSON();
+                formJSON.components = formJSON.components.map(c => new ActionRowBuilder().addComponents(new TextInputBuilder(c)));
+                const modal = new ModalBuilder(formJSON);
+                data.showModal(modal).then(() => {
+                    resolve();
+                }).catch(reject);
             });
         };
     }
