@@ -1,10 +1,12 @@
-const { validatePermission, getAddonPermission } = require('../../utils/functions.js');
+const { validatePermission, getAddonPermission, getClientParser } = require('../../utils/functions.js');
 const { getMessageContent } = require('../../utils/messageFunctions.js');
 const scopes = require('../../bitfields/scopes.js');
 const Save = require('../save.js');
 const MemberManager = require('../managers/memberManager.js');
 const UserManager = require('../managers/userManager.js');
 const Emoji = require('./emoji.js');
+const EmojiCollector = require('./collectors/emojiCollector.js');
+const InteractionCollector = require('./collectors/interactionCollector.js');
 
 const validAutoArchiveDates = [60, 1440, 10080, 4320];
 
@@ -99,6 +101,34 @@ class Message{
                 }).catch(reject);
             });
         }
+        this.executeCommand = (commandName, args) => {
+            return new Promise((resolve, reject) => {
+                if(!validatePermission(getAddonPermission(addon.name), scopes.bitfield.COMMANDS)) return reject(`Missing commands scope in bitfield`);
+                if(typeof commandName !== 'string') return reject(`Command name must be a type of string`);
+                if(!Array.isArray(args)){
+                    args = (this.content || '').startsWith(client.config.prefix) ? (this.content || '').slice(client.config.prefix.length).split(" ") : (this.content || '').split(" ");
+                }
+                let clientParser = getClientParser();
+                let client = clientParser.getClient();
+                const cmd = client.commands.get(commandName);
+                if(cmd){
+                    cmd.run(client, args, data, false);
+                } else {
+                    client.clientParser.interactionHandler.emit('execute', data, false);
+                }
+                resolve();
+            });
+        }
+        this.createReactionCollector = (options) => {
+            if(!validatePermission(getAddonPermission(addon.name), scopes.bitfield.EMOJIS)) throw new Error(`Missing emojis scope in bitfield`);
+            const collector = new EmojiCollector(options, this, addon);
+            return collector;
+        };
+        this.createInteractionCollector = (options) => {
+            if(!validatePermission(getAddonPermission(addon.name), scopes.bitfield.INTERACTIONS)) throw new Error(`Missing interactions scope in bitfield`);
+            const collector = new InteractionCollector(options, this, addon);
+            return collector;
+        };
     }
 }
 
