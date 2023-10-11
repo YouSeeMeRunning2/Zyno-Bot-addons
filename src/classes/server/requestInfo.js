@@ -1,8 +1,8 @@
 const { URLSearchParams } = require('url');
 
 class RequestInfo{
-    constructor(data, body){
-        const params = new URLSearchParams((data.url || '').split('?')[0]);
+    constructor(data, body, placeholders){
+        const params = new URLSearchParams((data.url || '').split('?').slice(1).join('?'));
         this.url = (data.url || '').split('?')[0];
         this.method = (data.method || '').toUpperCase();
         this.headers = {};
@@ -12,6 +12,7 @@ class RequestInfo{
         this.query = params;
         this.body = body;
         this.ip = data.socket.remoteAddress;
+        this.placeholders = placeholders || [];
     }
 }
 
