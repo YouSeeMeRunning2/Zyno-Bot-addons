@@ -5,10 +5,12 @@ const { getMessageContent } = require('../../../utils/messageFunctions.js');
 const scopes = require('../../../bitfields/scopes.js');
 const Save = require('../../save.js');
 const MemberManager = require('../../managers/memberManager.js');
+const MessageManager = require('../../managers/messageManager.js');
 
 class StageChannel extends GuildChannel{
     constructor(data, addon, guild, structureHandler){
         super(data, addon, guild);
+        this.addon = addon;
         this.joinable = data.joinable;
         this.full = data.full;
         this.rtcRegion = data.rtcRegion;
@@ -29,13 +31,17 @@ class StageChannel extends GuildChannel{
         if(validatePermission(getAddonPermission(addon.name), scopes.bitfield.CHANNELS)){
             addon.channels.set(this.id, this);
         }
-        this.deleteMessages = function(amount){
+        this.deleteMessages = function(amount, filter){
             return new Promise((resolve, reject) => {
                 if(!validatePermission(getAddonPermission(addon.name), scopes.bitfield.MESSAGES)) return reject(`Missing messages scope in bitfield`);
                 if(typeof amount !== 'number') return reject('Amount argument must be a type of number');
                 if(amount < 1) amount = 1;
                 else if(amount > 100) amount = 100;
-                data.bulkDelete(amount).then(() => resolve()).catch(reject);
+                let messageDelete = amount;
+                if(typeof filter === 'function'){
+                    messageDelete = Array.from(this.messages.filter(m => filter(m)).values()).map(m => m.id).slice(0, amount);
+                }
+                data.bulkDelete(messageDelete).then(() => resolve()).catch(reject);
             });
         }
         this.update = function(){
@@ -139,6 +145,12 @@ class StageChannel extends GuildChannel{
                 data.setBitrate(bitrate, reason).then(ch => resolve(structureHandler.createStructure('StageChannel', [ch, addon, guild]))).catch(reject);
             });
         }
+    }
+    get messages(){
+        const addonMessageManager = MessageManager.get(this.addon.name) || new Save();
+        const guildMessageManager = addonMessageManager.get(this.guildId) || new Save();
+        const channelMessageManager = guildMessageManager.get(this.id) || new Save();
+        return channelMessageManager;
     }
 };
 
