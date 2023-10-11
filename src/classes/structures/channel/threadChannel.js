@@ -4,11 +4,14 @@ const { getMessageContent } = require('../../../utils/messageFunctions.js');
 const scopes = require('../../../bitfields/scopes.js');
 const Save = require('../../save.js');
 const GuildMemberManager = require('../../managers/guildMemberManager.js');
+const MessageManager = require('../../managers/messageManager.js');
 
 class ThreadChannel extends BaseChannel{
     constructor(data, addon, guild, structureHandler){
         super(data, addon);
+        this.addon = addon;
         this.guild = guild;
+        this.guildId = guild.id;
         this.name = data.name;
         this.threadArchived = data.archived;
         this.archived = this.threadArchived ? new Date(data.archivedTimestamp) : null;
@@ -24,13 +27,13 @@ class ThreadChannel extends BaseChannel{
         this.manageable = data.manageable;
         this.slowMode = typeof data.rateLimitPerUser === 'number' ? data.rateLimitPerUser * 1000 : 0;
         this.parentId = data.parentId || null;
-        this.parent = typeof this.parentId === 'string' ? this.guild.channels.get(this.parentId) : undefined;
+        this.parent = typeof this.parentId === 'string' ? guild.channels.get(this.parentId) : undefined;
         if(typeof this.parent !== 'undefined'){
             this.parent.threads.set(this.id, this);
         }
         this.members = new Save();
         const addonGuildMemberManager = GuildMemberManager.get(addon.name) || new Save();
-        const guildMemberManager = addonGuildMemberManager.get(this.guild.id) || new Save();
+        const guildMemberManager = addonGuildMemberManager.get(guild.id) || new Save();
         const guildMembers = Array.from(data.members.cache.values());
         for(var i = 0; i < guildMembers.length; i++){
             var _guildMember = guildMembers[i];
@@ -61,13 +64,17 @@ class ThreadChannel extends BaseChannel{
                 }).catch(reject);
             });
         }
-        this.deleteMessages = function(amount){
+        this.deleteMessages = function(amount, filter){
             return new Promise((resolve, reject) => {
                 if(!validatePermission(getAddonPermission(addon.name), scopes.bitfield.MESSAGES)) return reject(`Missing messages scope in bitfield`);
                 if(typeof amount !== 'number') return reject('Amount argument must be a type of number');
                 if(amount < 1) amount = 1;
                 else if(amount > 100) amount = 100;
-                data.bulkDelete(amount).then(() => resolve()).catch(reject);
+                let messageDelete = amount;
+                if(typeof filter === 'function'){
+                    messageDelete = Array.from(this.messages.filter(m => filter(m)).values()).map(m => m.id).slice(0, amount);
+                }
+                data.bulkDelete(messageDelete).then(() => resolve()).catch(reject);
             });
         }
         this.join = () => {
@@ -221,6 +228,12 @@ class ThreadChannel extends BaseChannel{
                 }).catch(reject);
         	});
         }
+    }
+    get messages(){
+        const addonMessageManager = MessageManager.get(this.addon.name) || new Save();
+        const guildMessageManager = addonMessageManager.get(this.guildId) || new Save();
+        const channelMessageManager = guildMessageManager.get(this.id) || new Save();
+        return channelMessageManager;
     }
 }
 
