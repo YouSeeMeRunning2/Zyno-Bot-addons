@@ -2,11 +2,11 @@ const { ValueSaver } = require('valuesaver');
 const CommandHandler = require('./commandHandler.js');
 const Command = require('../command.js');
 const CommandBuilder = require('../builders/commandBuilder.js');
-const { getPermissionsString, generateId } = require('../../utils/functions.js');
+const { generateId } = require('../../utils/functions.js');
 const { getClientParser } = require('../../utils/parser.js');
 const { createStructures } = require('./eventHandler.js');
 const structureHandler = require('./structureHandler.js');
-const { addons, addonCreate } = require('../../utils/saves.js');
+const { addons, addonCreate, commandListeners, eventListeners } = require('../../utils/saves.js');
 const EventEmitter = require('events');
 const fs = require('fs/promises');
 const { existsSync } = require('fs');
@@ -19,8 +19,138 @@ function validateRegistrant(addon, registrant){
     if(!registrant) return false;
     if(addon.name !== registrant.name) return false;
     if(addon.permissions !== registrant.bitfield) return false;
+    if(addon.resolveablePath !== registrant.resolveablePath) return false;
     return true;
 }
+
+class AddonRegistar{
+    constructor(){}
+    disableAddon(addonName, force = true, restart = false){
+        return new Promise(async (resolve, reject) => {
+            await new Promise(resolve => {
+                if(clientParser.ready === false){
+                    clientParser.once('ready', () => {
+                        resolve();
+                    });
+                } else {
+                    resolve();
+                }
+            });
+            const addon = addons.get(addonName);
+            if(!addon) return reject(`The addon was not found in the registar`);
+            if(addon.verified === false || addon.allowed === false) return reject(`The addon has already been disabled`);
+            const baseName = `${addon.addon.name}@${addon.addon.version}-${addon.addon.author}`;
+            const registeredAddon = registeredAddons.get(baseName);
+            if(registeredAddon){
+                registeredAddons.delete(baseName);
+            }
+
+            addons.set(addonName, {
+                ...addon,
+                verified: false,
+                allowed: false,
+                restarting: restart,
+                stopping: true,
+                starting: false
+            });
+
+            try{
+                let addonValuesaver = registeredAddons.toReadableArray();
+                await fs.writeFile(path.join(__dirname, `../../addons.json`), JSON.stringify(addonValuesaver), {encoding: 'utf-8'});
+            } catch {}
+            const registeredCommands = commandRegistrant.addonCommands.filter(c => c.addon === addonName);
+            const keys = registeredCommands.toReadableArray().map(c => c.key);
+            for(let i = 0; i < keys.length; i++){
+                let key = keys[i];
+                commandRegistrant.addonCommands.delete(key);
+            }
+            clientParser.getClient().addons.writeValueSaver(commandRegistrant.addonCommands.toReadableArray());
+
+            delete require.cache[require.resolve(addon.resolveablePath)];
+
+            addon.addon.channels.clear();
+            addon.addon.guilds.clear();
+            addon.addon.commands.clear();
+            addon.addon.removeAllListeners();
+            const _commandListeners = commandListeners.filter(c => c.addonName === addonName);
+            for(let i = 0; i < _commandListeners.length; i++){
+                _commandListeners[i].listener.removeAllListeners();
+                commandListeners.splice(commandListeners.indexOf(_commandListeners[i]), 1);
+            }
+            const _eventListeners = eventListeners.filter(e => e.addonName === addonName);
+            for(let i = 0; i < _eventListeners.length; i++){
+                _eventListeners[i].listener.removeAllListeners();
+                eventListeners.splice(eventListeners.indexOf(_eventListeners[i]), 1);
+            }
+
+            const commandHandlers = registeredCommands.toReadableArray().map(a => a.value.passedClass);
+            for(let i = 0; i < commandHandlers.length; i++){
+                commandHandlers[i].removeAllListeners();
+            }
+
+            if(force === true){
+                let commands = [...registeredCommands.toReadableArray().map(a => new CommandBuilder(a.value.command).toJSON())];
+                for(var i = 0; i < commands.length; i++){
+                    delete commands[i]['overwrite'];
+                }
+
+                await clientParser.getClient().updateCommands(commands);
+            }
+
+            addons.set(addonName, {
+                ...addon,
+                verified: false,
+                allowed: false,
+                restarting: restart,
+                stopping: false,
+                starting: false
+            });
+            
+            resolve();
+        });
+    }
+    enableAddon(addonName){
+        return new Promise(async (resolve, reject) => {
+            const addon = addons.get(addonName);
+            if(!addon) return reject(`The addon was not found in the registar`);
+            const baseName = `${addon.addon.name}@${addon.addon.version}-${addon.addon.author}`;
+            registeredAddons.set(baseName, {
+                name: addon.addon.name,
+                bitfield: addon.permissions,
+                resolveablePath: addon.resolveablePath
+            });
+            addons.set(addonName, {
+                ...addon,
+                verified: true,
+                allowed: true,
+                restarting: false,
+                stopping: false,
+                starting: true
+            });
+            try{
+                let addonValuesaver = registeredAddons.toReadableArray();
+                await fs.writeFile(path.join(__dirname, `../../addons.json`), JSON.stringify(addonValuesaver), {encoding: 'utf-8'});
+            } catch {}
+            try{
+                require(require.resolve(addon.resolveablePath));
+            } catch (err){
+                return reject(`There was an error while registering the addon '${addon}': ${err}`);
+            }
+            resolve();
+        });
+    }
+    restartAddon(addonName){
+        return new Promise((resolve, reject) => {
+            this.disableAddon(addonName, true, true).then(() => {
+                this.enableAddon(addonName).then(resolve).catch(reject);
+            }).catch(reject);
+        });
+    }
+}
+
+const addonRegistar = new AddonRegistar();
+
+clientParser.parseAddonRegistar(addonRegistar);
 
 class CommandRegister extends EventEmitter{
     constructor(){
@@ -138,10 +268,13 @@ class CommandRegister extends EventEmitter{
         }
         this.timeout = setTimeout(async () => {
             this.timeout = undefined;
-            var commands = this.queue.map(q => q.command);
+            var commands = [...this.queue.map(q => {
+                return {...q.command}
+            })];
             commands.push(...this.addonCommands.toReadableArray().map(a => new CommandBuilder(a.value.command).toJSON()));
             for(var i = 0; i < commands.length; i++){
                 delete commands[i]['overwrite'];
+                delete commands[i]['category'];
             }
             try{
                 await clientParser.getClient().updateCommands(commands);
@@ -216,9 +349,7 @@ function registerAddon(addon){
         }
         const baseName = `${addon.name}@${addon.version}-${addon.author}`;
         if(typeof addon.name === 'string'){
-            if(addons.get(addon.name)){
-                resolve({error: 'Invalid addon: Another addon with the same name already exists'});
-            } else {
+            if(!addons.get(addon.name)){
                 var getRegistrant = registeredAddons.get(baseName);
                 if(validateRegistrant(addon, getRegistrant)){
                     addons.set(addon.name, {
@@ -226,7 +357,11 @@ function registerAddon(addon){
                         addon: addon,
                         permissions: addon.permissions,
                         verified: true,
-                        allowed: true
+                        allowed: true,
+                        resolveablePath: addon.resolveablePath,
+                        restarting: false,
+                        stopping: false,
+                        starting: false
                     });
                     addonCreate.emit(addon.name, true);
                     if(clientParser.ready === true){
@@ -239,50 +374,40 @@ function registerAddon(addon){
                         });
                     }
                 } else {
-                    new Promise(async _resolve => {
-                        var permissionsString = getPermissionsString(addon.permissions);
-                        if(clientParser.ready === true){
-                            const addonRegistrant = await clientParser.getClient().registerAddon(addon, permissionsString);
-                            _resolve(addonRegistrant);
-                        } else {
-                            clientParser.once('ready', async () => {
-                                const addonRegistrant = await clientParser.getClient().registerAddon(addon, permissionsString);
-                                _resolve(addonRegistrant);
-                            });
-                        }
-                    }).then(async val => {
-                        if(val === true){
-                            addons.set(addon.name, {
-                                baseName: baseName,
-                                addon: addon,
-                                permissions: addon.permissions,
-                                verified: true,
-                                allowed: true
-                            });
-                            registeredAddons.set(baseName, {
-                                name: addon.name,
-                                bitfield: addon.permissions
-                            });
-                            addonCreate.emit(addon.name, true);
-                            try{
-                                let addonValuesaver = registeredAddons.toReadableArray();
-                                await fs.writeFile(path.join(__dirname, `../../addons.json`), JSON.stringify(addonValuesaver), {encoding: 'utf-8'});
-                            } catch {}
-                            await createStructures(clientParser.getClient(), addons.toReadableArray());
-                            resolve(true);
-                        } else {
-                            addons.set(addon.name, {
-                                baseName: baseName,
-                                addon: addon,
-                                permissions: addon.permissions,
-                                verified: false,
-                                allowed: false
-                            });
-                            addonCreate.emit(addon.name, false);
-                            resolve(false);
-                        }
+                    addons.set(addon.name, {
+                        baseName: baseName,
+                        addon: addon,
+                        permissions: addon.permissions,
+                        verified: true,
+                        allowed: true,
+                        resolveablePath: addon.resolveablePath,
+                        restarting: false,
+                        stopping: false,
+                        starting: false
+                    });
+                    addonRegistar.disableAddon(addon.name, false, false).then(() => {
+                        resolve(false);
+                    }).catch(err => {
+                        resolve({error: err});
                     });
                 }
+            } else {
+                if(typeof addon.resolveablePath === 'string') throw new Error(`Another addon with the name '${addon.name}' has already been registered`);
+                const addonInfo = addons.get(addon.name);
+                addons.set(addon.name, {
+                    baseName: addonInfo.baseName,
+                    addon: addon,
+                    permissions: addon.permissions,
+                    verified: true,
+                    allowed: true,
+                    resolveablePath: addon.resolveablePath,
+                    restarting: false,
+                    stopping: false,
+                    starting: false
+                });
+                await createStructures(clientParser.getClient(), addons.toReadableArray());
+                addonCreate.emit(addon.name, true);
+                resolve(true);
             }
         } else {
             resolve({error: 'Invalid addon: The addon has no name or connection'});
