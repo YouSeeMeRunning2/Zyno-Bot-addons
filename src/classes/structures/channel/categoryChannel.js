@@ -12,6 +12,7 @@ class CategoryChannel extends BaseChannel{
         this.position = data.position;
         this.deletable = data.deletable;
         this.guild = guild;
+        this.guildId = guild.id;
         this.manageable = data.manageable;
         this.permissions = new Save();
         const permissions = Array.from(data.permissionOverwrites.cache.values());
