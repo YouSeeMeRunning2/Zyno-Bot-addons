@@ -50,6 +50,19 @@ class Member extends User{
         this.kickable = guildMember.kickable;
         this.voiceConnected = typeof guildMember.voice.channelId === 'string';
         this.voice = new VoiceState(guildMember.voice, addon);
+        this.getInviteInfo = () => {
+            if(!validatePermission(getAddonPermission(addon.name), scopes.bitfield.MEMBERS)) throw new Error(`Missing members scope in bitfield`);
+            const userinfo = client.userinfo.get(guildMember.id) || [];
+            const guildUserInfo = userinfo.filter(i => i.guild === this.guildId) || {invitedBy: undefined, invites: 0, inviteleaves: 0};
+            const addonGuildMemberManager = GuildMemberManager.get(addon.name) || new Save();
+            const guildMembers = addonGuildMemberManager.get(guildMember.guild.id) || new Save();
+            return {
+                invitedBy: typeof guildUserInfo.invitedBy === 'string' ? guildMembers.get(guildUserInfo.invitedBy) : undefined,
+                invites: guildUserInfo.invites ?? 0,
+                leaves: guildUserInfo.inviteleaves ?? 0,
+                total: (guildUserInfo.invites ?? 0) - (guildUserInfo.inviteleaves ?? 0)
+            };
+        };
         this.getWarns = () => {
             if(!validatePermission(getAddonPermission(addon.name), scopes.bitfield.MEMBERS)) throw new Error(`Missing members scope in bitfield`);
             const addonGuildMemberManager = GuildMemberManager.get(addon.name) || new Save();
