@@ -20,6 +20,13 @@ class CommandBuilder{
         this.description = description;
         return this;
     }
+    setCategory(category){
+        if(typeof category !== 'string') throw new Error(`Invalid command: Category must be a string`);
+        const validCategories = ["general", "polls", "games", "fun", "giveaway", "music", "moderation", "economy", "level", "tickets", "bot", "admin"];
+        if(validCategories.indexOf(category.toLowerCase()) < 0) throw new Error(`Invalid command: Category must be one of options ${validCategories.join(', ')}`);
+        this.category = category.toLowerCase();
+        return this;
+    }
     addOptions(...options){
         for(var i = 0; i < options.length; i++){
             if(Array.isArray(options[i])){
@@ -75,7 +82,8 @@ class CommandBuilder{
             dm_permission: this.dm_permission,
             default_member_permissions: this.permissions,
             nsfw: this.nsfw,
-            overwrite: this.overwrite
+            overwrite: this.overwrite,
+            category: this.category
         };
         return commandObject;
     }
@@ -86,6 +94,7 @@ class CommandBuilder{
     permissions = null;
     nsfw = false;
     overwrite = false;
+    category = "general";
 }
 
 module.exports = CommandBuilder;
