@@ -1,7 +1,8 @@
 const Save = require('../save.js');
 const { validatePermission, getAddonPermission } = require('../../utils/functions.js');
 const GuildMemberManager = require('../managers/guildMemberManager.js');
-const Member = require('../structures/member.js');
+const VoiceChannel = require('./channel/voiceChannel.js');
+const StageChannel = require('./channel/stageChannel.js');
 const VoiceStateManager = require('../managers/voiceStateManager.js');
 const scopes = require('../../bitfields/scopes.js');
 
@@ -33,7 +34,7 @@ class VoiceState{
             return new Promise((resolve, reject) => {
                 if(!validatePermission(getAddonPermission(addon.name), scopes.bitfield.MEMBERS)) return reject(`Missing members scope in bitfield`);
                 if(typeof reason !== 'string') reason = undefined;
-                voiceState.disconnect(reason).then(m => {
+                voiceState.disconnect(reason).then(() => {
                     resolve();
                 }).catch(reject);
             });
@@ -57,6 +58,17 @@ class VoiceState{
                     resolve();
                 }).catch(reject);
             });
+        }
+        this.setChannel = function(channel, reason){
+            return new Promise((resolve, reject) => {
+                if(!validatePermission(getAddonPermission(addon.name), scopes.bitfield.MEMBERS)) return reject(`Missing members scope in bitfield`);
+                if(typeof channel !== 'string' && !(channel instanceof VoiceChannel) && !(channel instanceof StageChannel)) return reject(`The channel is not a resolvable channel`);
+                if(typeof reason !== 'string') reason = undefined;
+                if(typeof channel !== 'string') channel = channel.id;
+                voiceState.setChannel(channel, reason).then(m => {
+                    resolve();
+                }).catch(reject);
+            })
         }
     }
 }
