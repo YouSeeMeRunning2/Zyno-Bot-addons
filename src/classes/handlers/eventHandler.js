@@ -2,18 +2,21 @@ const structureHandler = require('./structureHandler.js');
 const MemberManager = require('../managers/memberManager.js');
 const GuildMemberManager = require('../managers/guildMemberManager.js');
 const GuildManager = require('../managers/guildManager.js');
+const inviteManager = require('../managers/inviteManager.js');
 const { getAddonPermission, validatePermission, passClient, wait } = require('../../utils/functions.js');
-const { eventListeners, addons } = require('../../utils/saves.js');
+const { eventListeners, addons, emojiCollectors, interactionCollectors } = require('../../utils/saves.js');
 const scopes = require('../../bitfields/scopes.js');
 const { ChannelType, AuditLogEvent } = require('discord.js');
+const MessageManager = require('../managers/messageManager.js');
 
-function createStructures(client, addons){
+function createStructures(client, _addons){
     return new Promise(async resolve => {
+        const readableAddons = addons.toReadableArray();
         const guilds = Object.values(client.mainguilds);
         for(var i = 0; i < guilds.length; i++){
             var guild = guilds[i];
-            for(var z = 0; z < addons.length; z++){
-                var addonInfo = addons[z].value;
+            for(var z = 0; z < readableAddons.length; z++){
+                var addonInfo = readableAddons[z].value;
                 structureHandler.createStructure('Guild', [guild, addonInfo.addon]);
                 if(addonInfo.verified === true && addonInfo.allowed === true){
                     await wait(1e3);
@@ -35,7 +38,7 @@ function emitEvent(addonName, eventName, permissionBitfield, ...args){
     if(!listener) return;
     if(listener.listener.listenerCount(eventName) > 0){
         listener.listener.emit(eventName, ...args);
-    }
+    } else;
 }
 
 function handleEvents(client, parser){
@@ -43,6 +46,47 @@ function handleEvents(client, parser){
         passClient(client);
         let _addons = addons.toReadableArray();
         await createStructures(client, _addons);
+
+        client.on('inviteCreate', invite => {
+            if(!invite) return;
+            if(client.config.guilds.indexOf(invite.guild.id) < 0) return;
+            _addons = addons.toReadableArray();
+            for(var z = 0; z < _addons.length; z++){
+                let addonInfo = _addons[z].value;
+                if(addonInfo.verified === true && addonInfo.allowed === true){
+                    if(validatePermission(getAddonPermission(addonInfo.addon.name), scopes.bitfield.GUILDS)){
+                        const addonGuilds = GuildManager.get(addonInfo.addon.name) || structureHandler.createStructure('Save');
+                        const cachedGuild = addonGuilds.get(invite.guild.id);
+                        if(!cachedGuild) continue;
+
+                        const cachedInvite = structureHandler.createStructure('Invite', [invite, cachedGuild, addonInfo.addon]);
+
+                        emitEvent(addonInfo.addon.name, 'inviteCreate', scopes.bitfield.GUILDS, cachedInvite);
+                    }
+                }
+            }
+        });
+
+        client.on('inviteDelete', invite => {
+            if(!invite) return;
+            if(client.config.guilds.indexOf(invite.guild.id) < 0) return;
+            _addons = addons.toReadableArray();
+            for(var z = 0; z < _addons.length; z++){
+                let addonInfo = _addons[z].value;
+                if(addonInfo.verified === true && addonInfo.allowed === true){
+                    if(validatePermission(getAddonPermission(addonInfo.addon.name), scopes.bitfield.GUILDS)){
+                        const addonInviteManager = inviteManager.get(addonInfo.addon.name) || structureHandler.createStructure('Save');
+                        const guildInviteManager = addonInviteManager.get(invite.guild.id) || structureHandler.createStructure('Save');
+                        const cachedInvite = guildInviteManager.get(invite.code);
+                        guildInviteManager.delete(invite.code);
+                        addonInviteManager.set(invite.guild.id, guildInviteManager);
+                        inviteManager.set(addonInfo.addon.name, addonInviteManager);
+
+                        emitEvent(addonInfo.addon.name, 'inviteDelete', scopes.bitfield.GUILDS, cachedInvite);
+                    }
+                }
+            }
+        });
 
         parser.on('voiceStateUpdate', (_oldState, _newState) => {
             if(!_newState || !_oldState) return;
@@ -292,7 +336,7 @@ function handleEvents(client, parser){
             }
         });
         
-        parser.on('ticketClose', (_channel, transcript) => {
+        parser.on('ticketClose', (_channel, transcript, rawInfo) => {
             if(!_channel) return;
             if(client.config.guilds.indexOf(_channel.guild.id) < 0) return;
             _addons = addons.toReadableArray();
@@ -317,7 +361,7 @@ function handleEvents(client, parser){
                     } else if(_channel.type === ChannelType.GuildDirectory){
                         channel = structureHandler.createStructure('DirectoryChannel', [_channel, addonInfo.addon, guild]);
                     }
-                    emitEvent(addonInfo.addon.name, 'ticketClose', scopes.bitfield.MEMBERS, channel, transcript);
+                    emitEvent(addonInfo.addon.name, 'ticketClose', scopes.bitfield.CHANNELS, channel, transcript, rawInfo);
                 }
             }
         });
@@ -377,6 +421,17 @@ function handleEvents(client, parser){
                 let addonInfo = _addons[z].value;
                 if(addonInfo.verified === true && addonInfo.allowed === true){
                     const msg = structureHandler.createStructure('Message', [message, addonInfo.addon]);
+                    if(msg.channel){
+                        if(validatePermission(getAddonPermission(addonInfo.addon.name), scopes.bitfield.MESSAGES) && (msg.channel.isVoiceStage() || msg.channel.isTextChannel() || msg.channel.isThread() || msg.channel.isVoiceChannel())){
+                            const addonMessageManager = MessageManager.get(addonInfo.addon.name) || structureHandler.createStructure('Save');
+                            const guildMessageManager = addonMessageManager.get(message.guild.id) || structureHandler.createStructure('Save');
+                            const channelMessageManager = guildMessageManager.get(message.channel.id) || structureHandler.createStructure('Save');
+                            channelMessageManager.set(message.id, msg);
+                            guildMessageManager.set(message.channel.id, channelMessageManager);
+                            addonMessageManager.set(message.guild.id, guildMessageManager);
+                            MessageManager.set(addonInfo.addon.name, addonMessageManager);
+                        }
+                    }
                     emitEvent(addonInfo.addon.name, 'message', scopes.bitfield.MESSAGES, msg);
                 }
             }
@@ -396,6 +451,15 @@ function handleEvents(client, parser){
                 if(addonInfo.verified === true && addonInfo.allowed === true){
                     const executor = structureHandler.createStructure('User', [_executor, addonInfo.addon, false]);
                     const message = structureHandler.createStructure('Message', [_message, addonInfo.addon]);
+                    if(validatePermission(getAddonPermission(addonInfo.addon.name), scopes.bitfield.MESSAGES)){
+                        const addonMessageManager = MessageManager.get(addonInfo.addon.name) || structureHandler.createStructure('Save');
+                        const guildMessageManager = addonMessageManager.get(_message.guild.id) || structureHandler.createStructure('Save');
+                        const channelMessageManager = guildMessageManager.get(_message.channel.id) || structureHandler.createStructure('Save');
+                        channelMessageManager.delete(_message.id);
+                        guildMessageManager.set(_message.channel.id, channelMessageManager);
+                        addonMessageManager.set(_message.guild.id, guildMessageManager);
+                        MessageManager.set(addonInfo.addon.name, addonMessageManager);
+                    }
                     emitEvent(addonInfo.addon.name, 'messageDelete', scopes.bitfield.MESSAGES, message, executor);
                 }
             }
@@ -419,6 +483,15 @@ function handleEvents(client, parser){
                 if(addonInfo.verified === true && addonInfo.allowed === true){
                     const oldMessage = structureHandler.createStructure('Message', [_oldMessage, addonInfo.addon]);
                     const newMessage = structureHandler.createStructure('Message', [_newMessage, addonInfo.addon]);
+                    if(validatePermission(getAddonPermission(addonInfo.addon.name), scopes.bitfield.MESSAGES)){
+                        const addonMessageManager = MessageManager.get(addonInfo.addon.name) || structureHandler.createStructure('Save');
+                        const guildMessageManager = addonMessageManager.get(_newMessage.guild.id) || structureHandler.createStructure('Save');
+                        const channelMessageManager = guildMessageManager.get(_newMessage.channel.id) || structureHandler.createStructure('Save');
+                        channelMessageManager.set(newMessage.id, newMessage);
+                        guildMessageManager.set(_newMessage.channel.id, channelMessageManager);
+                        addonMessageManager.set(_newMessage.guild.id, guildMessageManager);
+                        MessageManager.set(addonInfo.addon.name, addonMessageManager);
+                    }
                     emitEvent(addonInfo.addon.name, 'messageUpdate', scopes.bitfield.MESSAGES, oldMessage, newMessage);
                 }
             }
@@ -433,6 +506,39 @@ function handleEvents(client, parser){
                 if(addonInfo.verified === true && addonInfo.allowed === true){
                     const user = structureHandler.createStructure('User', [_user, addonInfo.addon, false]);
                     const reaction = structureHandler.createStructure('Reaction', [_reaction, addonInfo.addon, user]);
+                    const addonEmojiCollectors = emojiCollectors.get(addonInfo.addon.name);
+                    if(addonEmojiCollectors){
+                        const messageCollectors = addonEmojiCollectors.get(_reaction.message.id);
+                        if(messageCollectors){
+                            const collectors = messageCollectors.filter(c => {
+                                return c.filter(reaction, user);
+                            });
+                            const removeCollectors = [];
+                            for(let i = 0; i < collectors.length; i++){
+                                let collector = collectors[i];
+                                ++collector.count;
+                                if(collector.max <= collector.count){
+                                    removeCollectors.push(collector);
+                                }
+                                if(collector.time < (new Date()).getTime()){
+                                    removeCollectors.push(collector);
+                                    continue;
+                                }
+                                collector.emit('collect', reaction, user);
+                            }
+                            for(let i = 0; i < removeCollectors.length; i++){
+                                let removeCollector = removeCollectors[i];
+                                removeCollector.emit('end');
+                                removeCollector.removeAllListeners();
+                                let collectorIndex = messageCollectors.indexOf(removeCollector);
+                                if(collectorIndex >= 0){
+                                    messageCollectors.splice(collectorIndex, 1);
+                                }
+                            }
+                            addonEmojiCollectors.set(_reaction.message.id, messageCollectors);
+                            emojiCollectors.set(addonInfo.addon.name, addonEmojiCollectors);
+                        }
+                    }
                     emitEvent(addonInfo.addon.name, 'reactionAdd', scopes.bitfield.EMOJIS, reaction);
                 }
             }
@@ -722,6 +828,13 @@ function handleEvents(client, parser){
                     const guild = structureHandler.createStructure('Guild', [_channel.guild, addonInfo.addon]);
                     guild.channels.delete(_channel.id);
                     addonInfo.addon.channels.delete(_channel.id);
+                    if(validatePermission(getAddonPermission(addonInfo.addon.name), scopes.bitfield.MESSAGES)){
+                        const addonMessageManager = MessageManager.get(addonInfo.addon.name) || structureHandler.createStructure('Save');
+                        const guildMessageManager = addonMessageManager.get(_channel.guild.id) || structureHandler.createStructure('Save');
+                        guildMessageManager.delete(_channel.id);
+                        addonMessageManager.set(_channel.guild.id, guildMessageManager);
+                        MessageManager.set(addonInfo.addon.name, addonMessageManager);
+                    }
                     _channel.guild.fetchAuditLogs({
                         limit: 1,
                         type: AuditLogEvent.ChannelDelete,
@@ -855,6 +968,39 @@ function handleEvents(client, parser){
                 let addonInfo = _addons[z].value;
                 if(addonInfo.verified === true && addonInfo.allowed === true){
                     const buttonInteraction = structureHandler.createStructure('ButtonInteraction', [interaction, addonInfo.addon]);
+                    const addonInteractionCollectors = interactionCollectors.get(addonInfo.addon.name);
+                    if(addonInteractionCollectors){
+                        const messageCollectors = addonInteractionCollectors.get(interaction.message.id);
+                        if(messageCollectors){
+                            const collectors = messageCollectors.filter(c => {
+                                return c.filter(buttonInteraction);
+                            });
+                            const removeCollectors = [];
+                            for(let i = 0; i < collectors.length; i++){
+                                let collector = collectors[i];
+                                ++collector.count;
+                                if(collector.max <= collector.count){
+                                    removeCollectors.push(collector);
+                                }
+                                if(collector.time < (new Date()).getTime()){
+                                    removeCollectors.push(collector);
+                                    continue;
+                                }
+                                collector.emit('collect', buttonInteraction);
+                            }
+                            for(let i = 0; i < removeCollectors.length; i++){
+                                let removeCollector = removeCollectors[i];
+                                removeCollector.emit('end');
+                                removeCollector.removeAllListeners();
+                                let collectorIndex = messageCollectors.indexOf(removeCollector);
+                                if(collectorIndex >= 0){
+                                    messageCollectors.splice(collectorIndex, 1);
+                                }
+                            }
+                            addonInteractionCollectors.set(interaction.message.id, messageCollectors);
+                            interactionCollectors.set(addonInfo.addon.name, addonInteractionCollectors);
+                        }
+                    }
                     emitEvent(addonInfo.addon.name, 'buttonClick', scopes.bitfield.INTERACTIONS, buttonInteraction);
                 }
             }
@@ -869,7 +1015,54 @@ function handleEvents(client, parser){
                 let addonInfo = _addons[z].value;
                 if(addonInfo.verified === true && addonInfo.allowed === true){
                     const menuInteraction = structureHandler.createStructure('MenuInteraction', [interaction, addonInfo.addon]);
+                    const addonInteractionCollectors = interactionCollectors.get(addonInfo.addon.name);
+                    if(addonInteractionCollectors){
+                        const messageCollectors = addonInteractionCollectors.get(interaction.message.id);
+                        if(messageCollectors){
+                            const collectors = messageCollectors.filter(c => {
+                                return c.filter(menuInteraction);
+                            });
+                            const removeCollectors = [];
+                            for(let i = 0; i < collectors.length; i++){
+                                let collector = collectors[i];
+                                ++collector.count;
+                                if(collector.max <= collector.count){
+                                    removeCollectors.push(collector);
+                                }
+                                if(collector.time < (new Date()).getTime()){
+                                    removeCollectors.push(collector);
+                                    continue;
+                                }
+                                collector.emit('collect', menuInteraction);
+                            }
+                            for(let i = 0; i < removeCollectors.length; i++){
+                                let removeCollector = removeCollectors[i];
+                                removeCollector.emit('end');
+                                removeCollector.removeAllListeners();
+                                let collectorIndex = messageCollectors.indexOf(removeCollector);
+                                if(collectorIndex >= 0){
+                                    messageCollectors.splice(collectorIndex, 1);
+                                }
+                            }
+                            addonInteractionCollectors.set(interaction.message.id, messageCollectors);
+                            interactionCollectors.set(addonInfo.addon.name, addonInteractionCollectors);
+                        }
+                    }
                     emitEvent(addonInfo.addon.name, 'menuSelect', scopes.bitfield.INTERACTIONS, menuInteraction);
+                }
+            }
+        });
+
+        parser.on('modal', (interaction) => {
+            if(!interaction) return;
+            if(!interaction.inGuild()) return;
+            if(client.config.guilds.indexOf(interaction.guild?.id) < 0) return;
+            _addons = addons.toReadableArray();
+            for(var z = 0; z < _addons.length; z++){
+                let addonInfo = _addons[z].value;
+                if(addonInfo.verified === true && addonInfo.allowed === true){
+                    const modalInteraction = structureHandler.createStructure('FormInteraction', [interaction, addonInfo.addon]);
+                    emitEvent(addonInfo.addon.name, 'formSubmit', scopes.bitfield.INTERACTIONS, modalInteraction);
                 }
             }
         });
