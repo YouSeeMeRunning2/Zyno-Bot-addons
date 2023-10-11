@@ -1,7 +1,7 @@
 const EventEmitter = require('events');
 const Save = require('./save.js');
 const { createBitfield, validatePermission, getAddonPermission } = require('../utils/functions.js');
-const { commandListeners, eventListeners, addons, addonCreate, botClasses } = require('../utils/saves.js');
+const { commandListeners, eventListeners, addons, botClasses } = require('../utils/saves.js');
 const { registerAddon, commandRegistrant } = require('./handlers/addonHandler.js');
 const Bot = require('./structures/bot.js');
 const CommandBuilder = require('./builders/commandBuilder.js');
@@ -66,8 +66,31 @@ class Addon extends EventEmitter{
                 throw new Error(`The bitfield must be an Array of scopes or a number`);
             }
 
-            const registrant = await registerAddon(this);
+            const addonInfo = addons.get(this.name);
             
+            let nextAddonCallback = null;
+            if(!addonInfo){
+                try{
+                    nextAddonCallback = await clientParser.emitAddon(this);
+                } catch (err){
+                    console.log(err);
+                    return;
+                }
+            } else if(addonInfo.addon.author !== this.author || addonInfo.addon.version !== this.version){
+                try{
+                    nextAddonCallback = await clientParser.emitAddon(this);
+                } catch (err){
+                    console.log(err);
+                    return;
+                }
+            }
+
+            this.created = new Date();
+
+            const registrant = await registerAddon(this);
+
+            if(typeof nextAddonCallback === 'function') nextAddonCallback();
+
             if(registrant === true){
                 Object.defineProperty(this, 'ready', {
                     value: true,
@@ -121,155 +144,103 @@ class Addon extends EventEmitter{
     getBot(){
         return new Promise((resolve, reject) => {
             let addonInfo = addons.get(this.name);
-            new Promise((resolve, _reject) => {
-                if(addonInfo) resolve();
-                else {
-                    addonCreate.once(this.name, (allowed) => {
-                        if(allowed === true){
-                            addonInfo = addons.get(this.name);
-                            resolve();
-                        } else {
-                            _reject('The addon has been declined by the bot\'s owner');
-                        }
-                    });
+            if(!addonInfo) return reject('Addon hasn\'t been enabled by the owner of the bot');
+            if(addonInfo.verified === false || addonInfo.allowed === false) return reject('Addon hasn\'t been enabled by the owner of the bot');
+            new Promise((parse) => {
+                if(clientParser.ready === false){
+                    clientParser.once('ready', () => {
+                        parse()
+                    })
+                } else {
+                    parse();
                 }
             }).then(() => {
-                if(addonInfo.verified === false || addonInfo.allowed === false) return reject('Addon hasn\'t been enabled by the owner of the bot');
-                new Promise((parse) => {
-                    if(clientParser.ready === false){
-                        clientParser.once('ready', () => {
-                            parse()
-                        })
-                    } else {
-                        parse();
-                    }
-                }).then(() => {
-                    const filter = botClasses.filter(b => b.addonName === this.name);
-                    if(filter.length > 0){
-                        resolve(filter[0].bot);
-                    } else {
-                        const bot = new Bot(this);
-                        botClasses.push({addonName: this.name, bot: bot});
-                        resolve(bot);
-                    }
-                });
-            }).catch(reject)
+                const filter = botClasses.filter(b => b.addonName === this.name);
+                if(filter.length > 0){
+                    resolve(filter[0].bot);
+                } else {
+                    const bot = new Bot(this);
+                    botClasses.push({addonName: this.name, bot: bot});
+                    resolve(bot);
+                }
+            });
         });
     }
     getHTTPServer(){
         return new Promise((resolve, reject) => {
             let addonInfo = addons.get(this.name);
-            new Promise((resolve, _reject) => {
-                if(addonInfo) resolve();
-                else {
-                    addonCreate.once(this.name, (allowed) => {
-                        if(allowed === true){
-                            addonInfo = addons.get(this.name);
-                            resolve();
-                        } else {
-                            _reject('The addon has been declined by the bot\'s owner');
-                        }
-                    });
-                }
-            }).then(() => {
-                if(addonInfo.verified === false || addonInfo.allowed === false) return reject('Addon hasn\'t been enabled by the owner of the bot');
-                if(!validatePermission(getAddonPermission(this.name), scopes.bitfield.SERVERS)) return reject('The addon doesn\'t have permissions to make use of the HTTP server');
-                new Promise((parse) => {
-                    if(clientParser.ready === false){
-                        clientParser.once('ready', () => {
-                            parse(clientParser.getClient());
-                        })
-                    } else {
+            if(!addonInfo) return reject('Addon hasn\'t been enabled by the owner of the bot');
+            if(addonInfo.verified === false || addonInfo.allowed === false) return reject('Addon hasn\'t been enabled by the owner of the bot');
+            if(!validatePermission(getAddonPermission(this.name), scopes.bitfield.SERVERS)) return reject('The addon doesn\'t have permissions to make use of the HTTP server');
+            new Promise((parse) => {
+                if(clientParser.ready === false){
+                    clientParser.once('ready', () => {
                         parse(clientParser.getClient());
-                    }
-                }).then(client => {
-                    const port = client.config.port;
-                    if(typeof port === 'string' || typeof port === 'number'){
-                        resolve(HttpServerHandler.startHTTPServer(parseInt(port)));
-                    } else {
-                        return reject('The owner of the bot hasn\'t set a port for the HTTP server');
-                    }
-                });
-            }).catch(reject);
+                    })
+                } else {
+                    parse(clientParser.getClient());
+                }
+            }).then(client => {
+                const port = client.config.port;
+                if(typeof port === 'string' || typeof port === 'number'){
+                    resolve(HttpServerHandler.startHTTPServer(parseInt(port)));
+                } else {
+                    return reject('The owner of the bot hasn\'t set a port for the HTTP server');
+                }
+            });
         });
     }
     getWSServer(){
         return new Promise((resolve, reject) => {
             let addonInfo = addons.get(this.name);
-            new Promise((resolve, reject) => {
-                if(addonInfo) resolve();
-                else {
-                    addonCreate.once(this.name, (allowed) => {
-                        if(allowed === true){
-                            addonInfo = addons.get(this.name);
-                            resolve();
-                        } else {
-                            reject('The addon has been declined by the bot\'s owner');
-                        }
-                    });
-                }
-            }).then(() => {
-                if(addonInfo.verified === false || addonInfo.allowed === false) return reject('Addon hasn\'t been enabled by the owner of the bot');
-                if(!validatePermission(getAddonPermission(this.name), scopes.bitfield.SERVERS)) return reject('The addon doesn\'t have permissions to make use of the WebSocket server');
-                new Promise((parse) => {
-                    if(clientParser.ready === false){
-                        clientParser.once('ready', () => {
-                            parse(clientParser.getClient());
-                        })
-                    } else {
+            if(!addonInfo) return reject('Addon hasn\'t been enabled by the owner of the bot');
+            if(addonInfo.verified === false || addonInfo.allowed === false) return reject('Addon hasn\'t been enabled by the owner of the bot');
+            if(!validatePermission(getAddonPermission(this.name), scopes.bitfield.SERVERS)) return reject('The addon doesn\'t have permissions to make use of the WebSocket server');
+            new Promise((parse) => {
+                if(clientParser.ready === false){
+                    clientParser.once('ready', () => {
                         parse(clientParser.getClient());
-                    }
-                }).then(client => {
-                    const port = client.config.port;
-                    if(typeof port === 'string' || typeof port === 'number'){
-                        resolve(HttpServerHandler.startWSServer(parseInt(port)));
-                    } else {
-                        return reject('The owner of the bot hasn\'t set a port for the HTTP server');
-                    }
-                });
-            }).catch(reject);
+                    })
+                } else {
+                    parse(clientParser.getClient());
+                }
+            }).then(client => {
+                const port = client.config.port;
+                if(typeof port === 'string' || typeof port === 'number'){
+                    resolve(HttpServerHandler.startWSServer(parseInt(port)));
+                } else {
+                    return reject('The owner of the bot hasn\'t set a port for the HTTP server');
+                }
+            });
         });
     }
     getRawSaves(){
         return new Promise((resolve, reject) => {
             let addonInfo = addons.get(this.name);
-            new Promise((resolve, reject) => {
-                if(addonInfo) resolve();
-                else {
-                    addonCreate.once(this.name, (allowed) => {
-                        if(allowed === true){
-                            addonInfo = addons.get(this.name);
-                            resolve();
-                        } else {
-                            reject('The addon has been declined by the bot\'s owner');
-                        }
-                    });
-                }
-            }).then(() => {
-                if(addonInfo.verified === false || addonInfo.allowed === false) return reject('Addon hasn\'t been enabled by the owner of the bot');
-                if(!validatePermission(getAddonPermission(this.name), scopes.bitfield.SAVES)) return reject('The addon doesn\'t have permissions to read the saves');
-                new Promise((parse) => {
-                    if(clientParser.ready === false){
-                        clientParser.once('ready', () => {
-                            parse(clientParser.getClient());
-                        })
-                    } else {
+            if(!addonInfo) return reject('Addon hasn\'t been enabled by the owner of the bot');
+            if(addonInfo.verified === false || addonInfo.allowed === false) return reject('Addon hasn\'t been enabled by the owner of the bot');
+            if(!validatePermission(getAddonPermission(this.name), scopes.bitfield.SAVES)) return reject('The addon doesn\'t have permissions to read the saves');
+            new Promise((parse) => {
+                if(clientParser.ready === false){
+                    clientParser.once('ready', () => {
                         parse(clientParser.getClient());
-                    }
-                }).then(client => {
-                    resolve({
-                        tickets: new Save(client.tickets),
-                        level: new Save(client.xp),
-                        economy: new Save(client.economy),
-                        afk: new Save(client.afk),
-                        badwords: new Save(client.badwords),
-                        giveaways: new Save(client.giveaways),
-                        reactrole: new Save(client.reactrole),
-                        suggestions: new Save(client.suggestions),
-                        warns: new Save(client.warns)
-                    });
+                    })
+                } else {
+                    parse(clientParser.getClient());
+                }
+            }).then(client => {
+                resolve({
+                    tickets: new Save(client.tickets),
+                    level: new Save(client.xp),
+                    economy: new Save(client.economy),
+                    afk: new Save(client.afk),
+                    badwords: new Save(client.badwords),
+                    giveaways: new Save(client.giveaways),
+                    reactrole: new Save(client.reactrole),
+                    suggestions: new Save(client.suggestions),
+                    warns: new Save(client.warns)
                 });
-            }).catch(reject);
+            });
         })
     }
     name = null;
