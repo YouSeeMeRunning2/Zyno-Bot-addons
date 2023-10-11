@@ -16,8 +16,10 @@ const Emoji = require('../structures/emoji.js');
 const Role = require('../structures/role.js');
 const User = require('../structures/user.js');
 const Reaction = require('../structures/reaction.js');
+const Invite = require('../structures/invite.js');
 const ButtonInteraction =  require('../structures/interactions/buttonInteraction.js');
 const MenuInteraction = require('../structures/interactions/menuInteraction.js');
+const FormInteraction = require('../structures/interactions/formInteraction.js');
 const Mentions = require('../structures/mentions.js');
 
 const structures = {
@@ -39,8 +41,10 @@ const structures = {
     Emoji: Emoji,
     User: User,
     Reaction: Reaction,
+    Invite: Invite,
     ButtonInteraction: ButtonInteraction,
     MenuInteraction: MenuInteraction,
+    FormInteraction: FormInteraction,
     Mentions: Mentions
 }
 
