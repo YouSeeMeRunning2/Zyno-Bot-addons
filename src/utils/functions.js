@@ -1,9 +1,9 @@
-const bitfieldInfo = require('../bitfields/scopes.js');
 const colors = require('./colors.json');
 const types = require('./channelTypes.js');
 const { addons } = require('./saves.js');
 
 var _client;
+var _clientParser;
 
 function generateId(length = 20){
     var characters = '0123456789';
@@ -21,20 +21,6 @@ function createBitfield(scopes){
         return b;
     }, 0);
     return bitfield;
-}
-
-function getPermissionsString(bitfield){
-    var permissionString = [];
-    if(typeof bitfield !== 'number') throw new Error(`Invalid bitfied: Bitfield is not a number`);
-    var bitfieldKeys = Object.keys(bitfieldInfo.bitfield);
-    var bitfieldValues = Object.values(bitfieldInfo.bitfield);
-    for(var i = 0; i < bitfieldValues.length; i++){
-        var bitValue = bitfieldValues[i];
-        if(bitfield & bitValue){
-            permissionString.push(bitfieldInfo.strings[bitfieldKeys[i]])
-        }
-    }
-    return permissionString;
 }
 
 function validatePermission(bitfield, bitvalue){
@@ -95,6 +81,14 @@ function getAddonPermission(addonName){
 
 function wait(ms){
     return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function passClientParser(clientParser){
+    _clientParser = clientParser;
+}
+
+function getClientParser(){
+    return _clientParser;
 }
 
 function passClient(client){
@@ -172,14 +166,15 @@ const validateDiscordEmote = (emote) => {
 module.exports = {
     generateId,
     createBitfield,
-    getPermissionsString,
     validatePermission,
     getResolvableDate,
     getColorCode,
     getAddonPermission,
     wait,
     passClient,
+    passClientParser,
     getClient,
+    getClientParser,
     getChannelType,
     getChannelId,
     validateURL,
