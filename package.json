@@ -1,6 +1,6 @@
 {
   "name": "zyno-bot-addons",
-  "version": "1.0.24",
+  "version": "1.1.0",
   "description": "Create easily addons for Zyno Bot",
   "main": "index.js",
   "keywords": [
@@ -13,10 +13,10 @@
   "license": "MIT",
   "typings": "index.d.ts",
   "dependencies": {
-    "discord.js": "^14.11.0",
+    "discord.js": "^14.13.0",
     "valuesaver": "^1.9.3",
-    "ws": "^8.13.0",
-    "yt-stream": "^1.4.5"
+    "ws": "^8.14.2",
+    "yt-stream": "^1.4.8"
   },
   "readme": "readme.MD",
   "repository": {
@@ -35,3 +35,4 @@
       "name": "Luuk" 
   }]
 }
+
