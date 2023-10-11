@@ -2,11 +2,13 @@ const { validatePermission, getAddonPermission, getColorCode, getChannelId, getR
 const scopes = require('../../bitfields/scopes.js');
 const GuildManager = require('../managers/guildManager.js');
 const GuildMemberManager = require('../managers/guildMemberManager.js');
+const inviteManager = require('../managers/inviteManager.js');
 const VoiceStateManager = require('../managers/voiceStateManager.js');
 const Member = require('./member.js');
 const Emoji = require('./emoji.js');
 const Role = require('./role.js');
 const CategoryChannel = require('./channel/categoryChannel.js');
+const Save = require('../save.js');
 const { ChannelType } = require('discord.js');
 
 const validAutoArchiveDates = [60, 1440, 10080, 4320];
@@ -39,6 +41,12 @@ class Guild{
             } else if(guildChannel.type === ChannelType.GuildDirectory){
                 structureHandler.createStructure('DirectoryChannel', [guildChannel, addon, this]);
             }
+        }
+        const invites = guild.invites.cache.map(i => i);
+        for(var i = 0; i < invites.length; i++){
+            if(!validatePermission(getAddonPermission(addon.name), scopes.bitfield.GUILDS)) continue;
+            let invite = invites[i];
+            structureHandler.createStructure('Invite', [invite, this, addon]);
         }
         this.iconURL = guild.iconURL({size: 256, dynamic: true});
         this.description = guild.description;
@@ -259,8 +267,8 @@ class Guild{
         }
     }
     get members(){
-        const addonGuildMemberManager = GuildMemberManager.get(this.addon.name) || structureHandler.createStructure('Save');
-        const guildMembers = addonGuildMemberManager.get(this.id) || structureHandler.createStructure('Save');
+        const addonGuildMemberManager = GuildMemberManager.get(this.addon.name) || new Save();
+        const guildMembers = addonGuildMemberManager.get(this.id) || new Save();
         return guildMembers;
     }
     get moderationRoles(){
@@ -273,9 +281,14 @@ class Guild{
         return this.roles.filter(r => (client.config.joinRoles[this.id] || []).indexOf(r.value.id) >= 0);
     }
     get owner(){
-        const addonGuildMemberManager = GuildMemberManager.get(this.addon.name) || structureHandler.createStructure('Save');
-        const guildMembers = addonGuildMemberManager.get(this.id) || structureHandler.createStructure('Save');
+        const addonGuildMemberManager = GuildMemberManager.get(this.addon.name) || new Save();
+        const guildMembers = addonGuildMemberManager.get(this.id) || new Save();
         return guildMembers.get(this.ownerId);
+    }
+    get invites(){
+        const addonInviteManager = inviteManager.get(this.addon.name) || new Save();
+        const guildInviteManager = addonInviteManager.get(this.id) || new Save();
+        return guildInviteManager;
     }
 }
 
