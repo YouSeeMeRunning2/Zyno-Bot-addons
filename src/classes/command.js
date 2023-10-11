@@ -2,7 +2,7 @@ const Save = require('./save.js');
 const Member = require('./structures/member.js');
 const User = require('./structures/user.js');
 const Role = require('./structures/role.js');
-const { getClient } = require('../utils/functions.js');
+const { getClientParser, getClient } = require('../utils/functions.js');
 const { getMessageContent } = require('../utils/messageFunctions.js');
 const { ApplicationCommandOptionType, ChannelType } = require('discord.js');
 
@@ -89,6 +89,24 @@ class Command{
         }
         this.isSlashCommand = () => {
             return this.slashCommand;
+        }
+        this.executeCommand = (commandName, args) => {
+            return new Promise((resolve, reject) => {
+                if(!validatePermission(getAddonPermission(addon.name), scopes.bitfield.COMMANDS)) return reject(`Missing commands scope in bitfield`);
+                if(typeof commandName !== 'string') return reject(`Command name must be a type of string`);
+                if(!Array.isArray(args)){
+                    args = this.args;
+                }
+                let clientParser = getClientParser();
+                let client = clientParser.getClient();
+                const cmd = client.commands.get(commandName);
+                if(cmd){
+                    cmd.run(client, args, data, true);
+                } else {
+                    client.clientParser.interactionHandler.emit('execute', data, false);
+                }
+                resolve();
+            });
         }
     }
     name = null;
