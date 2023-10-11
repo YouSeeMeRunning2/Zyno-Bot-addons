@@ -3,6 +3,8 @@ const CategoryChannel = require('./categoryChannel.js');
 const { validatePermission, getAddonPermission, getResolvableDate } = require('../../../utils/functions.js');
 const scopes = require('../../../bitfields/scopes.js');
 const Permissions = require('../permissions.js');
+const User = require('../user.js');
+const Invite = require('../invite.js');
 const Save = require('../../save.js');
 
 class GuildChannel extends BaseChannel{
@@ -11,6 +13,7 @@ class GuildChannel extends BaseChannel{
         this.viewable = data.viewable;
         this.name = data.name;
         this.guild = guild;
+        this.guildId = guild.id;
         this.manageable = data.manageable;
         this.position = data.position;
         this.deletable = data.deletable;
@@ -25,6 +28,50 @@ class GuildChannel extends BaseChannel{
             var permission = permissions[i];
             this.permissions.set(permission.id, new Permissions(permission, this));
         }
+        this.createInvite = (options) => {
+            return new Promise((resolve, reject) => {
+                if(typeof options !== 'object' || Array.isArray(options) || options === null) options = {};
+                let _options = {...options};
+                if(typeof _options.targetType === 'string'){
+                    switch(_options.targetType.toLowerCase()){
+                        case 'stream':
+                            _options.targetType = 1;
+                            break;
+                        case 'application':
+                            _options.targetType = 2;
+                            break;
+                        case 'embeddedapplication':
+                            _options.targetType = 2;
+                            break;
+                    }
+                    if(_options.targetUser instanceof User){
+                        _options.targetUser = _options.targetUser.id;
+                    }
+                } else if(typeof _options.targetType === 'number'){
+                    if(_options.targetType < 1 || _options.targetType > 2){
+                        return reject(`Invalid target type for invite`);
+                    }
+                    if(_options.targetUser instanceof User){
+                        _options.targetUser = _options.targetUser.id;
+                    }
+                } else if(typeof _options.targetType !== 'undefined'){
+                    return reject(`Invalid target type for invite`);
+                }
+
+                data.createInvite({
+                    temporary: !!_options.temporary,
+                    maxAge: typeof _options.maxAge === 'number' ? Math.round(_options.maxAge / 1000) : 0,
+                    maxUses: typeof _options.maxUses === 'number' ? _options.maxUses : 0,
+                    unique: !!_options.unique,
+                    targetUser: typeof _options.targetUser === 'string' ? _options.targetUser : undefined,
+                    targetApplication: typeof _options.targetApplication === 'string' ? _options.targetApplication : undefined,
+                    targetType: typeof _options.targetType === 'number' ? _options.targetType : undefined,
+                    reason: typeof _options.reason === 'string' ? _options.reason : undefined
+                }).then(invite => {
+                    resolve(new Invite(invite, this.guild, addon));
+                }).catch(reject);
+            });
+        };
         this.setNSFW = (nsfw, reason) => {
             return new Promise((resolve, reject) => {
                 if(!validatePermission(getAddonPermission(addon.name), scopes.bitfield.CHANNELS)) return reject(`Missing channels scope in bitfield`);
