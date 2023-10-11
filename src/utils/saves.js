@@ -6,11 +6,15 @@ const commandListeners = [];
 const eventListeners = [];
 const botClasses = [];
 const addons = new ValueSaver();
+const emojiCollectors = new ValueSaver();
+const interactionCollectors = new ValueSaver();
 
 module.exports = {
     addons,
     commandListeners,
     eventListeners,
     addonCreate,
-    botClasses
+    botClasses,
+    emojiCollectors,
+    interactionCollectors
 };
