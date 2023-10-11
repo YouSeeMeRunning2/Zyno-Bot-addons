@@ -11,6 +11,8 @@ type addonOptions = {
     bitfield: [number] | number;
 };
 
+type CategoryOption = "General" | "Polls" | "Games" | "Fun" | "Giveaway" | "Music" | "Moderation" | "Economy" | "Level" | "Tickets" | "Bot" | "Admin";
+
 type SaveDataType = Map<any, any> | object | Array<any> | ValueSaver;
 
 type AddonEvents = {
@@ -37,6 +39,16 @@ type CreateMessageBasedThreadOptions = {
     slowMode: ResolvableDate;
     reason: string;
 };
+
+type CreateInviteOptions = {
+    maxAge: number;
+    maxUses: number;
+    temporary: boolean;
+    targetUser: string | User;
+    targetType: 'application' | 'user' | 'EmbeddedApplication' | number;
+    targetApplication: string; unique?: boolean;
+    reason: string;
+}
 
 type AvatarOptions = {
     dynamic: boolean;
@@ -219,9 +231,40 @@ type VoiceChannelEditOptions = {
     permissions: PermissionsOverwrite;
 };
 
+type rawTicketInfo = {
+    channel: string;
+    claimed: boolean | string;
+    closed: boolean;
+    guild: string;
+    category: boolean | string;
+}
+
+type ReactionCollectorEvents = {
+    end: [];
+    collect: [Reaction, User];
+}
+
+type InteractionCollectorEvents = {
+    end: [];
+    collect: [MenuInteraction | ButtonInteraction];
+}
+
+type CreateReactionCollectorOptions = {
+    filter: (reaction: Reaction, user: User) => boolean;
+    max: number;
+    time: number;
+};
+
+type CreateInteractionCollectorOptions = {
+    filter: (interaction: MenuInteraction | ButtonInteraction) => boolean;
+    max: number;
+    time: number;
+};
+
 type BotEvents = {
     menuSelect: [MenuInteraction];
     buttonClick: [ButtonInteraction];
+    formSubmit: [FormInteraction];
     roleDelete: [Role, BaseEntry];
     roleUpdate: [Role, Role, BaseEntry];
     roleAdd: [Role, BaseEntry];
@@ -236,13 +279,15 @@ type BotEvents = {
     guildDescriptionChange: [Guild, Guild, BaseEntry];
     guildOwnerChange: [Guild, Guild, BaseEntry];
     guildAdd: [Guild];
+    inviteCreate: [Invite];
+    inviteDelete: [Invite];
     reactionDelete: [Reaction];
     reactionAdd: [Reaction];
     messageUpdate: [Message, Message];
     messageDelete: [Message, User];
     message: [Message];
     membersPrune: [Save<string, Member>, Guild];
-    ticketClose: [ChannelType, Buffer];
+    ticketClose: [ChannelType, Buffer, rawTicketInfo];
     levelUp: [Member];
     memberBan: [BanEntry];
     bannerChange: [User, User];
@@ -354,6 +399,40 @@ declare class WebSocketHandler extends EventEmitter{
     emit<T extends keyof WebSocketHandlerEvent>(eventName: T, listener: (...args: WebSocketHandlerEvent[T]) => void);
 }
 
+declare class ReactionCollector extends EventEmitter{
+    on<T extends keyof ReactionCollectorEvents>(eventName: T, listener: (...args: ReactionCollectorEvents[T]) => void);
+    once<T extends keyof ReactionCollectorEvents>(eventName: T, listener: (...args: ReactionCollectorEvents[T]) => void);
+    emit<T extends keyof ReactionCollectorEvents>(eventName: T, listener: (...args: ReactionCollectorEvents[T]) => void);
+
+    /**
+     * Stops collecting new reactions
+     */
+    stop() : void;
+
+    count: number;
+    max: number;
+    filter: Function;
+    id: string;
+    time: number;
+}
+
+declare class InteractionCollector extends EventEmitter{
+    on<T extends keyof InteractionCollectorEvents>(eventName: T, listener: (...args: InteractionCollectorEvents[T]) => void);
+    once<T extends keyof InteractionCollectorEvents>(eventName: T, listener: (...args: InteractionCollectorEvents[T]) => void);
+    emit<T extends keyof InteractionCollectorEvents>(eventName: T, listener: (...args: InteractionCollectorEvents[T]) => void);
+
+    /**
+     * Stops collecting new reactions
+     */
+    stop() : void;
+
+    count: number;
+    max: number;
+    filter: Function;
+    id: string;
+    time: number;
+}
+
 declare class BotEventListener extends EventEmitter{
     on<T extends keyof BotEvents>(eventName: T, listener: (...args: BotEvents[T]) => void);
     once<T extends keyof BotEvents>(eventName: T, listener: (...args: BotEvents[T]) => void);
@@ -427,6 +506,7 @@ declare class CategoryChannel extends BaseChannel{
     position: number;
     deletable: boolean;
     guild: Guild;
+    guildId: string;
     manageable: boolean;
     permissions: Save<string, Permissions>;
     channels: Save<string, ChannelType>;
@@ -460,6 +540,7 @@ declare class GuildChannel extends BaseChannel{
     viewable: boolean;
     name: string;
     guild: Guild;
+    guildId: string;
     manageable: boolean;
     position: number;
     deletable: boolean;
@@ -469,6 +550,12 @@ declare class GuildChannel extends BaseChannel{
     slowMode: number;
     nsfw: boolean;
     permissions: Save<string, Permissions>;
+
+    /**
+     * Creates an invite for the specified channel
+     * @param options Options to customize the invite
+     */
+    createInvite(options: CreateInviteOptions) : Promise<Invite>;
 
     /**
      * Marks or unmarks the channel as NSFW
@@ -546,7 +633,7 @@ declare class ForumChannel extends GuildChannel{
     edit(options: ForumChannelEditOptions) : Promise<ForumChannel>;
 
     /**
-     * Creates a new thread channe;
+     * Creates a new thread channel
      * @param options The settings for the thread channel
      */
     createThread(options: CreateThreadOptions) : Promise<ThreadChannel>;
@@ -556,6 +643,7 @@ declare class TextChannel extends GuildChannel{
     topic: string;
     autoArchiveThreads: number;
     threads: Save<string, ThreadChannel>;
+    messages: Save<string, Message>;
 
     /**
      * Changes the topic of the text channel
@@ -584,8 +672,9 @@ declare class TextChannel extends GuildChannel{
     /**
      * Delete an amount of messages in this channel
      * @param amount The amount of messages to delete, max 100 messages per time
+     * @param filter A function to filter the messages you'd like to delete from the cache
      */
-    deleteMessages(amount: number) : Promise<void>;
+    deleteMessages(amount: number, filter: ({key, value} : {key: string; value: Message;}) => boolean) : Promise<void>;
 
     /**
      * Change the settings of the text channel
@@ -602,6 +691,7 @@ declare class TextChannel extends GuildChannel{
 
 declare class ThreadChannel extends BaseChannel{
     guild: Guild;
+    guildId: string;
     name: string;
     threadArchived: boolean;
     archived?: Date | null;
@@ -618,6 +708,7 @@ declare class ThreadChannel extends BaseChannel{
     slowMode: number;
     parentId?: string | null;
     parent?: CategoryChannel | null | undefined;
+    messages: Save<string, Message>;
     members: Save<string, Member>;
     owner: Member;
 
@@ -658,8 +749,9 @@ declare class ThreadChannel extends BaseChannel{
     /**
      * Delete an amount of messages in this channel
      * @param amount The amount of messages to delete, max 100 messages per time
+     * @param filter A function to filter the messages you'd like to delete from the cache
      */
-    deleteMessages(amount: number) : Promise<void>;
+    deleteMessages(amount: number, filter: ({key, value} : {key: string; value: Message;}) => boolean) : Promise<void>;
 
     /**
      * Joins the thread channel if the bot isn't a participant already
@@ -731,6 +823,7 @@ declare class StageChannel extends GuildChannel{
     bitrate: number;
     userLimit: number;
     videoQualityMode: VideoQualityModeType;
+    messages: Save<string, Message>;
     members: Save<string, Member>;
 
     /**
@@ -747,8 +840,9 @@ declare class StageChannel extends GuildChannel{
     /**
      * Delete an amount of messages in this channel
      * @param amount The amount of messages to delete, max 100 messages per time
+     * @param filter A function to filter the messages you'd like to delete from the cache
      */
-    deleteMessages(amount: number) : Promise<void>;
+    deleteMessages(amount: number, filter: ({key, value} : {key: string; value: Message;}) => boolean) : Promise<void>;
 
     /**
      * Changes the settings of the stage channel
@@ -794,6 +888,7 @@ declare class VoiceChannel extends GuildChannel{
     userLimit: number;
     videoQuality: string;
     members: Save<string, Member>;
+    messages: Save<string, Message>;
 
     /**
      * Sends a message to the voice channel
@@ -809,8 +904,9 @@ declare class VoiceChannel extends GuildChannel{
     /**
      * Delete an amount of messages in this channel
      * @param amount The amount of messages to delete, max 100 messages per time
+     * @param filter A function to filter the messages you'd like to delete from the cache
      */
-    deleteMessages(amount: number) : Promise<void>;
+    deleteMessages(amount: number, filter: ({key, value} : {key: string; value: Message;}) => boolean) : Promise<void>;
 
     /**
      * Changes the settings of the voice channel
@@ -909,6 +1005,7 @@ declare class VoiceChannel extends GuildChannel{
 
 declare class DirectoryChannel extends BaseChannel{
     guild: Guild;
+    guildId: string;
     name: string;
     
     /**
@@ -975,6 +1072,7 @@ declare class MuteEntry{
 }
 
 declare class MenuInteraction{
+    type: String = "Menu";
     guild: Guild;
     guildId: string;
     channel: ChannelType;
@@ -985,6 +1083,27 @@ declare class MenuInteraction{
     customId: string;
     id: string;
     values: [string];
+
+    /**
+     * Returns a boolean which defines whether the interaction is a button interaction or not
+     */
+    isButton() : boolean {
+        return this.type === "Button";
+    };
+
+    /**
+     * Returns a boolean which defines whether the interaction is a menu interaction or not
+     */
+    isMenu() : boolean {
+        return this.type === "Menu";
+    };
+
+    /**
+     * Returns a boolean which defines whether the interaction is a form interaction or not
+     */
+    isForm() : boolean {
+        return this.type === "Form";
+    };
 
     /**
      * Tells the API that an update has been made as a result of the menu interaction
@@ -1018,9 +1137,16 @@ declare class MenuInteraction{
      * @param content The content of the new message
      */
     update(...content: [MessageContentType]) : Promise<Message>;
+
+    /**
+     * Shows a form to the member
+     * @param form The form the member who selected a value from the menu should see
+     */
+    sendForm(form: FormBuilder) : Promise<void>;
 }
 
 declare class ButtonInteraction{
+    type: String = "Button";
     guild: Guild;
     guildId: string;
     channel: ChannelType;
@@ -1031,6 +1157,106 @@ declare class ButtonInteraction{
     customId: string;
     id: string;
 
+    /**
+     * Returns a boolean which defines whether the interaction is a button interaction or not
+     */
+    isButton() : boolean {
+        return this.type === "Button";
+    };
+
+    /**
+     * Returns a boolean which defines whether the interaction is a menu interaction or not
+     */
+    isMenu() : boolean {
+        return this.type === "Menu";
+    };
+
+    /**
+     * Returns a boolean which defines whether the interaction is a form interaction or not
+     */
+    isForm() : boolean {
+        return this.type === "Form";
+    };
+
+    /**
+     * Tells the API that an update has been made as a result of the button interaction
+     */
+    deferUpdate() : Promise<void>;
+
+    /**
+     * Change the status of the interaction to 'Bot is thinking' and send a reply later
+     */
+    deferReply() : Promise<void>;
+
+    /**
+     * Deletes a reply if a reply was sent
+     */
+    deleteReply() : Promise<void>;
+
+    /**
+     * Replies to the button interaction with a message
+     * @param content The content of the message to send
+     */
+    reply(...content: [MessageContentType]) : Promise<Message>;
+
+    /**
+     * Replies later to the button interaction with a normal message
+     * @param content The content of the message to send
+     */
+    followUp(...content: [MessageContentType]) : Promise<Message>;
+
+    /**
+     * Updates the original reply of the button interaction
+     * @param content The content of the new message
+     */
+    update(...content: [MessageContentType]) : Promise<Message>;
+
+    /**
+     * Shows a form to the member
+     * @param form The form the member who pressed the button should see
+     */
+    sendForm(form: FormBuilder) : Promise<void>;
+}
+
+declare class FormInteraction{
+    type: String = "Form";
+    guild: Guild;
+    guildId: string;
+    channel: ChannelType;
+    channelId: string;
+    member: Member;
+    user: User;
+    message: Message;
+    customId: string;
+    id: string;
+    inputs: [string];
+
+    /**
+     * Returns a boolean which defines whether the interaction is a button interaction or not
+     */
+    isButton() : boolean {
+        return this.type === "Button";
+    };
+
+    /**
+     * Returns a boolean which defines whether the interaction is a menu interaction or not
+     */
+    isMenu() : boolean {
+        return this.type === "Menu";
+    };
+
+    /**
+     * Returns a boolean which defines whether the interaction is a form interaction or not
+     */
+    isForm() : boolean {
+        return this.type === "Form";
+    };
+
+    /**
+     * Get an input value provided by the member
+     * @param customId The custom id of the input
+     */
+    getInput(customId: string) : string;
     /**
      * Tells the API that an update has been made as a result of the button interaction
      */
@@ -1134,6 +1360,13 @@ declare class VoiceState{
      * @param reason The reason to mute or unmute the user
      */
     setMute(mute?: boolean, reason?: string) : Promise<void>;
+
+    /**
+     * Change the voice channel of the member
+     * @param channel The channel where you'd like to put the member in
+     * @param reason The reason why you want to change the voice channel
+     */
+    setChannel(channel: string | VoiceChannel | StageChannel, reason?: string) : Promise<void>;
 }
 
 declare class Reaction{
@@ -1329,6 +1562,33 @@ declare class Bot{
     setAvatar(avatar: AvatarResolvable) : Promise<void>;
 }
 
+declare class Invite{
+    url: string;
+    code: string;
+    inviter: Member;
+    inviterId: string;
+    expires: Date | null;
+    expireTimestamp: number | null;
+    created: Date;
+    createdTimestamp: number;
+    deletable: boolean;
+    channel: ChannelType;
+    channelId: string;
+    guild: Guild;
+    uses: number;
+
+    /**
+     * Defines whether the invite can be deleted or not
+     */
+    isDeletable() : boolean;
+
+    /**
+     * Deletes the invite
+     * @param reason The reason to delete the invite
+     */
+    delete(reason?: string) : Promise<void>;
+}
+
 declare class Guild{
     addon: Addon;
     id: string;
@@ -1353,6 +1613,7 @@ declare class Guild{
     moderationRoles: Save<string, Role>;
     ticketRoles: Save<string, Role>;
     joinRoles: Save<string, Role>;
+    invites: Save<string, Invite>;
 
     /**
      * Change the name of the guild
@@ -1485,6 +1746,11 @@ declare class Member extends User{
     kickable: boolean;
     voiceConnected: boolean;
     voice: VoiceState;
+
+    /**
+     * Gets the invite information about this member
+     */
+    getInviteInfo() : {invitedBy?: Member; invites: number; leaves: number; total: number};
 
     /**
      * Get all the warns the user has received
@@ -1631,6 +1897,25 @@ declare class Message{
      * @param options The options to customize the thread channel
      */
     createThread(options?: CreateMessageBasedThreadOptions) : Promise<ThreadChannel>;
+
+    /**
+     * Executes a command based on the current message
+     * @param commandName The name of the command you'd like to execute
+     * @param args The arguments you'd like to pass to the command
+     */
+    executeCommand(commandName: string, args?: [any]) : void;
+
+    /**
+     * Collects reactions which meet certain requirements set in the options
+     * @param options The requirements the reactions must meet to be collected
+     */
+    createReactionCollector(options: CreateReactionCollectorOptions) : ReactionCollector;
+
+    /**
+     * Collects interactions which meet certain requirements set in the options
+     * @param options The requirements the interactions must meet to be collected
+     */
+    createInteractionCollector(options: CreateInteractionCollectorOptions) : InteractionCollector;
 }
 
 declare class Command{
@@ -1656,6 +1941,143 @@ declare class Command{
      * Whether the executed command is a slash command or not
      */
     isSlashCommand() : boolean;
+    
+    /**
+     * Executes a command based on the current message
+     * @param commandName The name of the command you'd like to execute
+     * @param args The arguments you'd like to pass to the command
+     */
+    executeCommand(commandName: string, args?: [any]) : void;
+}
+
+export class InputBuilder{
+    /**
+     * Creates a new input which members can fill in
+     * @param data The data to create the input from
+     */
+    constructor(data?: {placeholder?: string; custom_id?: string; style?: number | 'short' | 'paragraph'; max_length?: number; min_length?: number; label?: string; value?: string; required?: boolean;});
+
+    /**
+     * Sets the label of the input
+     * @param label The label you'd like to set for the input
+     */
+    setLabel(label: string) : InputBuilder;
+    
+    /**
+     * Sets the placeholder of the input
+     * @param placeholder The placeholder you'd like to set for the input
+     */
+    setPlaceholder(placeholder: string) : InputBuilder;
+    
+    /**
+     * Sets the standard value of the input
+     * @param label The standard value you'd like to set for the input
+     */
+    setValue(label: string) : InputBuilder;
+    
+    /**
+     * Sets the minimum amount of characters which must be provided in the input
+     * @param minLength The minimum amount of characters which must be provided
+     */
+    setMinLength(minLength: string) : InputBuilder;
+    
+    /**
+     * Sets the maximum amount of characters which may be provided in the input
+     * @param maxLength The maximum amount of characters which may be provided
+     */
+    setMaxLength(maxLength: string) : InputBuilder;
+    
+    /**
+     * Will define whether the input is required to fill in for the member or not
+     * @param boolean A boolean which defines whether the input is required to fill in or not
+     */
+    setRequired(boolean: boolean) : InputBuilder;
+    
+    /**
+     * Sets a custom id for the input to identify it with later
+     * @param customId The custom id you'd like to set for the input
+     */
+    setCustomId(customId: string) : InputBuilder;
+
+    /**
+     * Sets the type of style for the input
+     * @param style Whether you'd like a short input style or a paragraph input style for the input
+     */
+    setStyle(style: 1 | 2 | 'short' | 'paragraph') : InputBuilder;
+
+    toJSON() : {
+        type: 4,
+        style: number;
+        required: boolean;
+        min_length: number | null;
+        max_length: number | null;
+        placeholder: string | null;
+        label: string | null;
+        value: string | null;
+    };
+
+    style: number;
+    required: boolean;
+    min_length: number | null;
+    max_length: number | null;
+    placeholder: string | null;
+    label: string | null;
+    value: string | null;
+}
+
+export class FormBuilder{
+    /**
+     * Creates a new form which members can fill in
+     * @param data The data to create the form builder from
+     */
+    constructor(data?: {title?: string; custom_id?: string; components?: [InputBuilder], inputs?: [InputBuilder]});
+
+    /**
+     * Sets the title of the form
+     * @param title The title you'd like to set for the form
+     */
+    setTitle(title: string) : FormBuilder;
+    
+    /**
+     * Sets a custom id for the form to identify it with later
+     * @param customId The custom id you'd like to set for the form
+     */
+    setCustomId(customId: string) : FormBuilder;
+
+    /**
+     * Adds inputs to the form for members to fill in
+     * @param components The input(s) you'd like to add to the form
+     */
+    addComponents(...components: [InputBuilder]) : FormBuilder;
+
+    /**
+     * Identical to the `addComponents` function. Adds inputs to the form for members to fill in
+     * @param inputs The input(s) you'd like to add to the form
+     */
+    addInputs(...inputs: [InputBuilder]) : FormBuilder;
+
+    custom_id: string | null;
+    title: string | null;
+    inputs: [{
+        type: 4,
+        style: number;
+        required: boolean;
+        min_length: number | null;
+        max_length: number | null;
+        placeholder: string | null;
+        label: string | null;
+        value: string | null;
+    }];
+    components: [{
+        type: 4,
+        style: number;
+        required: boolean;
+        min_length: number | null;
+        max_length: number | null;
+        placeholder: string | null;
+        label: string | null;
+        value: string | null;
+    }];
 }
 
 export class ActionRowBuilder{
@@ -2048,6 +2470,11 @@ export class CommandBuilder{
      */
     setDescription(description: string) : CommandBuilder;
     /**
+     * Sets the category of the command 
+     * @param category The category to set for the command
+     */
+    setCategory(category: CategoryOption) : CommandBuilder;
+    /**
      * Any additional options for the command
      * @param options The command's options
      */
@@ -2082,6 +2509,7 @@ export class CommandBuilder{
         permission: string;
         default_member_permissions: boolean;
         overwrite: boolean;
+        category: CategoryOption;
     };
 
     name: string;
@@ -2091,6 +2519,7 @@ export class CommandBuilder{
     permission: string | null;
     default_member_permissions: boolean;
     overwrite: boolean;
+    category: CategoryOption;
 }
 
 declare class CommandHandler extends EventEmitter{
