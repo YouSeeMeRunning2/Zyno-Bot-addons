@@ -26,7 +26,7 @@ class WebSocket extends EventEmitter{
         socket.on('error', err => {
             var errorMessage = err.message.toString();
             handler.errorMessages.push(errorMessage);
-        })
+        });
     }
 }
 
