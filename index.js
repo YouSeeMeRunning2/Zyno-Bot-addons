@@ -14,5 +14,7 @@ module.exports = {
     ButtonBuilder: require('./src/classes/builders/buttonBuilder.js'),
     SelectMenuBuilder: require('./src/classes/builders/selectMenuBuilder.js'),
     SelectMenuOptionBuilder: require('./src/classes/builders/selectMenuOptionBuilder.js'),
+    FormBuilder: require('./src/classes/builders/formBuilder.js'),
+    InputBuilder: require('./src/classes/builders/inputBuilder.js'),
     ActionRowBuilder: require('./src/classes/builders/actionRowBuilder.js')
 }
