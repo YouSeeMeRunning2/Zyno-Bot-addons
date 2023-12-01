@@ -5,10 +5,18 @@ const scopes = require('../../../bitfields/scopes.js');
 const Save = require('../../save.js');
 const GuildMemberManager = require('../../managers/guildMemberManager.js');
 const MessageManager = require('../../managers/messageManager.js');
+const channelManager = require('../../managers/channelManager.js');
 
 class ThreadChannel extends BaseChannel{
-    constructor(data, addon, guild, structureHandler){
+    constructor(data, addon, guild, structureHandler, cache){
         super(data, addon);
+        if(cache){
+            const addonChannelManager = channelManager.get(addon.name) || new Save();
+            const guildChannelManager = addonChannelManager.get(guild.id) || new Save();
+            guildChannelManager.set(data.id, this);
+            addonChannelManager.set(guild.id, guildChannelManager);
+            channelManager.set(addon.name, addonChannelManager);
+        }
         this.addon = addon;
         this.guild = guild;
         this.guildId = guild.id;
@@ -41,7 +49,6 @@ class ThreadChannel extends BaseChannel{
             if(typeof guildMember !== 'undefined') this.members.set(guildMember.id, guildMember);
         }
         this.owner = guildMemberManager.get(data.ownerId) || null;
-        if(guild) guild.channels.set(this.id, this);
         if(validatePermission(getAddonPermission(addon.name), scopes.bitfield.CHANNELS)){
             addon.channels.set(this.id, this);
         }
