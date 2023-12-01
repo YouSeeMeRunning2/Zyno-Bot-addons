@@ -6,7 +6,7 @@ const { generateId } = require('../../utils/functions.js');
 const { getClientParser } = require('../../utils/parser.js');
 const { createStructures } = require('./eventHandler.js');
 const structureHandler = require('./structureHandler.js');
-const { addons, addonCreate, commandListeners, eventListeners } = require('../../utils/saves.js');
+const { addons, addonCreate, commandListeners, eventListeners, builtStructures } = require('../../utils/saves.js');
 const EventEmitter = require('events');
 const fs = require('fs/promises');
 const { existsSync } = require('fs');
@@ -44,6 +44,8 @@ class AddonRegistar{
             if(registeredAddon){
                 registeredAddons.delete(baseName);
             }
+
+            delete builtStructures[addonName];
 
             addons.set(addonName, {
                 ...addon,
@@ -182,6 +184,10 @@ class CommandRegister extends EventEmitter{
     register(commandJSON, addonName){
         return new Promise(async (resolve, reject) => {
             var addon = addons.get(addonName);
+            Object.defineProperty(commandJSON, 'creator', {
+                value: addonName,
+                writable: false
+            });
             if(!addon){
                 var abortTooLong = setTimeout(function(){
                     reject('The owner of the bot took too long to response');
@@ -285,7 +291,7 @@ class CommandRegister extends EventEmitter{
                     while(commandIds.indexOf(cmdId) >= 0){
                         cmdId = generateId();
                     }
-                    commandQueue.command['id'] = cmdId;
+                    commandQueue.command['id'] = cmdId
                     var cmd = new CommandHandler(commandQueue.command);
                     commandQueue.functions.resolve(cmd);
                     delete commandQueue.functions;
@@ -302,6 +308,16 @@ class CommandRegister extends EventEmitter{
             }
             this.queue = [];
         }, 2000);
+    }
+    removeCommand(commandName, addonName){
+        return new Promise((resolve, reject) => {
+            let addonCommand = this.addonCommands.get(commandName);
+            if(!addonCommand) return reject(`There was no such command found`);
+            if(addonCommand.command.creator !== addonName) return reject(`The command was not created by this addon`);
+            this.addonCommands.delete(commandName);
+            this.registerCommands();
+            resolve();
+        });
     }
     timeout = undefined;
     ready = false;
@@ -400,7 +416,7 @@ function registerAddon(addon){
                     permissions: addon.permissions,
                     verified: true,
                     allowed: true,
-                    resolveablePath: addon.resolveablePath,
+                    resolveablePath: addonInfo.resolveablePath,
                     restarting: false,
                     stopping: false,
                     starting: false
