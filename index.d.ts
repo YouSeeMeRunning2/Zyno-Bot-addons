@@ -2528,6 +2528,12 @@ declare class CommandHandler extends EventEmitter{
     name: string;
     description: string;
     id: string;
+    options: [];
+    category: string | null;
+    dm_permission: boolean;
+    permissions: string | null;
+    nsfw: boolean;
+    overwrite: boolean;
 }
 
 export declare class Save<K, V> extends Map<K, V>{
