@@ -21,6 +21,7 @@ const ButtonInteraction =  require('../structures/interactions/buttonInteraction
 const MenuInteraction = require('../structures/interactions/menuInteraction.js');
 const FormInteraction = require('../structures/interactions/formInteraction.js');
 const Mentions = require('../structures/mentions.js');
+const VoiceState = require('../structures/voiceState.js');
 
 const structures = {
     Member: Member,
@@ -45,7 +46,8 @@ const structures = {
     ButtonInteraction: ButtonInteraction,
     MenuInteraction: MenuInteraction,
     FormInteraction: FormInteraction,
-    Mentions: Mentions
+    Mentions: Mentions,
+    VoiceState: VoiceState
 }
 
 class StructureHandler{
@@ -54,7 +56,7 @@ class StructureHandler{
     createStructure(name, args){
         if(!structures[name]) return;
         let _arguments = [...(args || [])];
-        if(name !== 'Save') _arguments.push(this);
+        if(name !== 'Save') _arguments.push(this, true);
         const structure = new structures[name](..._arguments);
         return structure;
     }
