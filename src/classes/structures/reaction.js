@@ -2,10 +2,14 @@ const User = require('./user.js');
 const Member = require('./member.js');
 const Save = require('../save.js');
 const GuildMemberManager = require('../managers/guildMemberManager.js');
+const messageManager = require('../managers/messageManager.js');
 
 class Reaction{
     constructor(data, addon, _user, structureHandler){
-        this.message = structureHandler.createStructure('Message', [data.message, addon]);
+        const addonMessageManager = messageManager.get(addon.name) || structureHandler.createStructure('Save');
+        const guildMessageManager = addonMessageManager.get(data.message.guild.id) || structureHandler.createStructure('Save');
+        const channelMessageManager = guildMessageManager.get(data.message.channel.id) || structureHandler.createStructure('Save');
+        this.message = channelMessageManager.get(data.message.id) ?? structureHandler.createStructure('Message', [data.message, addon]);
         this.guild = this.message.guild;
         this.id = data.emoji.id;
         const addonGuildMemberManager = GuildMemberManager.get(addon.name) || new Save();
