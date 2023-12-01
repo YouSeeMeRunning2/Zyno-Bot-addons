@@ -8,13 +8,21 @@ const Save = require('../../save.js');
 const MemberManager = require('../../managers/memberManager.js');
 const MessageManager = require('../../managers/messageManager.js');
 const ytstream = require('yt-stream');
+const channelManager = require('../../managers/channelManager.js');
 
-let client;
+let client = null;
 
 class VoiceChannel extends GuildChannel{
-    constructor(data, addon, guild, structureHandler){
+    constructor(data, addon, guild, structureHandler, cache){
         super(data, addon, guild);
-        client = getClient();
+        if(cache){
+            const addonChannelManager = channelManager.get(addon.name) || new Save();
+            const guildChannelManager = addonChannelManager.get(guild.id) || new Save();
+            guildChannelManager.set(data.id, this);
+            addonChannelManager.set(guild.id, guildChannelManager);
+            channelManager.set(addon.name, addonChannelManager);
+        }
+        if(!client) client = getClient();
         this.addon = addon;
         this.joinable = data.joinable;
         this.speakable = data.speakable;
@@ -33,7 +41,6 @@ class VoiceChannel extends GuildChannel{
             if(!cachedMember) continue;
             this.members.set(cachedMember.id, cachedMember);
         }
-        if(guild) guild.channels.set(this.id, this);
         if(validatePermission(getAddonPermission(addon.name), scopes.bitfield.CHANNELS)){
             addon.channels.set(this.id, this);
         }
