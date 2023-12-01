@@ -3,20 +3,30 @@ const UserManager = require('../managers/userManager.js');
 const User = require('../structures/user.js');
 const scopes = require('../../bitfields/scopes.js');
 const Save = require('../save.js');
+const emojiManager = require('../managers/emojiManager.js');
 
 class Emoji{
-    constructor(emoji, addon, guild){
+    constructor(emoji, addon, guild, structureHandler, cache){
+        if(cache){
+            const addonEmojiManager = emojiManager.get(addon.name) || new Save();
+            const guildEmojiManager = addonEmojiManager.get(guild.id) || new Save();
+            guildEmojiManager.set(emoji.id, this);
+            addonEmojiManager.set(guild.id, guildEmojiManager);
+            emojiManager.set(addon.name, addonEmojiManager);
+        }
+        this.addon = addon;
+        this.creatorId = emoji.author ? emoji.author.id : null;
         this.animated = emoji.animated;
         this.guild = guild;
-        const addonUserManager = UserManager.get(addon.name) || new Save();
-        this.creator = (typeof emoji.author === 'object' && !Array.isArray(emoji.author) && emoji.author !== null) ? addonUserManager.get(emoji.author.id) : null;
         this.created = new Date(emoji.createdTimestamp);
         this.createdTimestamp = emoji.createdTimestamp;
         this.id = emoji.id;
         this.name = emoji.name;
-        this.url = emoji.url;
         this.string = `<:${this.name}:${this.id}>`;
         if(guild) this.guild.emojis.set(this.id, this);
+        this.getURL = function(){
+            return emoji.imageURL();
+        }
         this.setName = function(name, reason){
             return new Promise((resolve, reject) => {
                 if(!validatePermission(getAddonPermission(addon.name), scopes.bitfield.EMOJIS)) return reject(`Missing emojis scope in bitfield`);
@@ -44,6 +54,10 @@ class Emoji{
                 }).catch(reject);
             });
         }
+    }
+    get creator(){
+        const addonUserManager = UserManager.get(this.addon.name) || new Save();
+        return typeof this.creatorId === 'string' ? addonUserManager.get(this.creatorId) : null;
     }
 }
 
