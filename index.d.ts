@@ -1072,14 +1072,16 @@ declare class MuteEntry{
 }
 
 declare class MenuInteraction{
-    type: String = "Menu";
+    type: "Menu";
     guild: Guild;
     guildId: string;
     channel: ChannelType;
     channelId: string;
     member: Member;
+    memberId: string;
     user: User;
     message: Message;
+    messageId: string;
     customId: string;
     id: string;
     values: [string];
@@ -1087,23 +1089,17 @@ declare class MenuInteraction{
     /**
      * Returns a boolean which defines whether the interaction is a button interaction or not
      */
-    isButton() : boolean {
-        return this.type === "Button";
-    };
+    isButton() : false;
 
     /**
      * Returns a boolean which defines whether the interaction is a menu interaction or not
      */
-    isMenu() : boolean {
-        return this.type === "Menu";
-    };
+    isMenu() : true;
 
     /**
      * Returns a boolean which defines whether the interaction is a form interaction or not
      */
-    isForm() : boolean {
-        return this.type === "Form";
-    };
+    isForm() : false;
 
     /**
      * Tells the API that an update has been made as a result of the menu interaction
@@ -1146,37 +1142,33 @@ declare class MenuInteraction{
 }
 
 declare class ButtonInteraction{
-    type: String = "Button";
+    type: "Button";
     guild: Guild;
     guildId: string;
     channel: ChannelType;
     channelId: string;
     member: Member;
+    memberId: string;
     user: User;
     message: Message;
+    messageId: string;
     customId: string;
     id: string;
 
     /**
      * Returns a boolean which defines whether the interaction is a button interaction or not
      */
-    isButton() : boolean {
-        return this.type === "Button";
-    };
+    isButton() : true;
 
     /**
      * Returns a boolean which defines whether the interaction is a menu interaction or not
      */
-    isMenu() : boolean {
-        return this.type === "Menu";
-    };
+    isMenu() : false;
 
     /**
      * Returns a boolean which defines whether the interaction is a form interaction or not
      */
-    isForm() : boolean {
-        return this.type === "Form";
-    };
+    isForm() : false;
 
     /**
      * Tells the API that an update has been made as a result of the button interaction
@@ -1219,14 +1211,16 @@ declare class ButtonInteraction{
 }
 
 declare class FormInteraction{
-    type: String = "Form";
+    type: "Form";
     guild: Guild;
     guildId: string;
     channel: ChannelType;
     channelId: string;
     member: Member;
+    memberId: string;
     user: User;
     message: Message;
+    messageId: string;
     customId: string;
     id: string;
     inputs: [string];
@@ -1234,23 +1228,17 @@ declare class FormInteraction{
     /**
      * Returns a boolean which defines whether the interaction is a button interaction or not
      */
-    isButton() : boolean {
-        return this.type === "Button";
-    };
+    isButton() : false;
 
     /**
      * Returns a boolean which defines whether the interaction is a menu interaction or not
      */
-    isMenu() : boolean {
-        return this.type === "Menu";
-    };
+    isMenu() : false;
 
     /**
      * Returns a boolean which defines whether the interaction is a form interaction or not
      */
-    isForm() : boolean {
-        return this.type === "Form";
-    };
+    isForm() : true;
 
     /**
      * Get an input value provided by the member
@@ -1339,6 +1327,7 @@ declare class VoiceState{
     mute: boolean;
     deaf: boolean;
     channelId: string | null;
+    guildId: string | undefined;
     channel: ChannelType;
     
     /**
@@ -1429,8 +1418,12 @@ declare class Emoji{
     createdTimestamp: number;
     id: string;
     name: string;
-    url: string;
     string: string;
+
+    /**
+     * Provides the url of the image of the emoji
+     */
+    getURL() : string;
 
     /**
      * Changes the name of the current emoji
@@ -1465,6 +1458,7 @@ declare class Role{
     createdTimestamp: number;
     editable: boolean;
     guild: Guild;
+    guildId: string;
     permissions: PermissionsBitField;
     mentionable: boolean;
 
@@ -1923,10 +1917,13 @@ declare class Command{
     description: string;
     slashCommand: boolean;
     member: Member;
+    memberId: string;
     created: Date;
     createdTimestamp: number;
     guild: Guild;
+    guildId: string;
     channel: ChannelType;
+    messageId: string | undefined;
     message?: Message | undefined;
     args: [string];
     options: Save<string, CommandOptionType>;
@@ -2596,6 +2593,12 @@ export class Addon extends EventEmitter{
     createCommand(command: CommandBuilder) : Promise<CommandHandler>;
 
     /**
+     * Removes a command which was previously created by this addon
+     * @param commandName The name of the command you'd like to remove
+     */
+    removeCommand(commandName: string) : Promise<void>;
+
+    /**
      * Creates an event listener which listens to events of the bot
      */
     createEventListener() : BotEventListener;
@@ -2633,6 +2636,30 @@ export class Addon extends EventEmitter{
         suggestions: Save<string, object>,
         warns: Save<string, [object]>
     }>;
+
+    /**
+     * Returns an object with the structure of a command
+     * @param commandName The name of the command you'd like to get the structure of
+     */
+    getCommandData(commandName: string) : Promise<{
+        name: string;
+        description?: string;
+        nsfw: boolean;
+        dm_permission: boolean;
+        permissions?: string | null | undefined;
+        overwrite: boolean;
+        category: string;
+        options: [{
+            name: string;
+            description: string;
+            options: [];
+            nsfw: boolean;
+            permission: string;
+            default_member_permissions: boolean;
+            overwrite: boolean;
+            category: CategoryOption;
+        }]
+    } | undefined>;
 
     on<T extends keyof AddonEvents>(eventName: T, listener: (...args: AddonEvents[T]) => void);
     once<T extends keyof AddonEvents>(eventName: T, listener: (...args: AddonEvents[T]) => void);
