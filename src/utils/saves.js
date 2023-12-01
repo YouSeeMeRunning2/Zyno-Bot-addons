@@ -8,6 +8,7 @@ const botClasses = [];
 const addons = new ValueSaver();
 const emojiCollectors = new ValueSaver();
 const interactionCollectors = new ValueSaver();
+const builtStructures = {};
 
 module.exports = {
     addons,
@@ -16,5 +17,6 @@ module.exports = {
     addonCreate,
     botClasses,
     emojiCollectors,
-    interactionCollectors
+    interactionCollectors,
+    builtStructures
 };
