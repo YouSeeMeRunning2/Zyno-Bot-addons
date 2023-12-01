@@ -10,68 +10,44 @@ const Role = require('./role.js');
 const CategoryChannel = require('./channel/categoryChannel.js');
 const Save = require('../save.js');
 const { ChannelType } = require('discord.js');
+const channelManager = require('../managers/channelManager.js');
+const roleManager = require('../managers/roleManager.js');
+const emojiManager = require('../managers/emojiManager.js');
 
 const validAutoArchiveDates = [60, 1440, 10080, 4320];
 
 let client;
 
 class Guild{
-    constructor(guild, addon, structureHandler){
-        const addonGuildManager = GuildManager.get(addon.name) || structureHandler.createStructure('Save');
-        addonGuildManager.set(guild.id, this);
-        GuildManager.set(addon.name, addonGuildManager);
+    constructor(guild, addon, structureHandler, cache){
+        if(cache){
+            const addonGuildManager = GuildManager.get(addon.name) || structureHandler.createStructure('Save');
+            addonGuildManager.set(guild.id, this);
+            GuildManager.set(addon.name, addonGuildManager);
+        }
         client = getClient();
         this.addon = addon;
         this.id = guild.id;
         this.name = guild.name;
-        this.channels = structureHandler.createStructure('Save');
-        const guildChannels = Array.from(guild.channels.cache.values());
-        for(var i = 0; i < guildChannels.length; i++){
-            var guildChannel = guildChannels[i];
-            if(guildChannel.type === ChannelType.GuildText || guildChannel.type === ChannelType.GuildAnnouncement){
-                structureHandler.createStructure('TextChannel', [guildChannel, addon, this]);
-            } else if(guildChannel.type === ChannelType.GuildCategory){
-                structureHandler.createStructure('CategoryChannel', [guildChannel, addon, this]);
-            } else if(guildChannel.type === ChannelType.GuildVoice){
-                structureHandler.createStructure('VoiceChannel', [guildChannel, addon, this]);
-            } else if(guildChannel.type === ChannelType.GuildStageVoice){
-                structureHandler.createStructure('StageChannel', [guildChannel, addon, this]);
-            } else if(guildChannel.type === ChannelType.GuildForum){
-                structureHandler.createStructure('ForumChannel', [guildChannel, addon, this]);
-            } else if(guildChannel.type === ChannelType.GuildDirectory){
-                structureHandler.createStructure('DirectoryChannel', [guildChannel, addon, this]);
-            }
-        }
-        const invites = guild.invites.cache.map(i => i);
+        const invites = Array.from(guild.invites.cache.values());
+        const addonInviteManager = inviteManager.get(addon.name) || new Save();
+        const guildInviteManager = addonInviteManager.get(guild.id) || new Save();
         for(var i = 0; i < invites.length; i++){
             if(!validatePermission(getAddonPermission(addon.name), scopes.bitfield.GUILDS)) continue;
             let invite = invites[i];
-            structureHandler.createStructure('Invite', [invite, this, addon]);
+            if(!guildInviteManager.get(invite.id)) structureHandler.createStructure('Invite', [invite, this, addon]);
         }
         this.iconURL = guild.iconURL({size: 256, dynamic: true});
         this.description = guild.description;
         this.ownerId = guild.ownerId;
         this.verified = guild.verified;
         this.verificationLevel = guild.verificationLevel;
-        this.emojis = structureHandler.createStructure('Save');
-        const guildEmojis = Array.from(guild.emojis.cache.values());
-        for(var i = 0; i < guildEmojis.length; i++){
-            var guildEmoji = guildEmojis[i];
-            this.emojis.set(guildEmoji.id, new Emoji(guildEmoji, addon, this));
-        }
-        this.roles = structureHandler.createStructure('Save');
-        const guildRoles = Array.from(guild.roles.cache.values());
-        for(var i = 0; i < guildRoles.length; i++){
-            var guildRole = guildRoles[i];
-            this.roles.set(guildRole.id, new Role(guildRole, addon, this));
-        }
-        this.everyoneRole = this.roles.filter(role => role.value.id === guild.roles.everyone.id).first();
         this.memberCount = guild.memberCount;
         this.botAdded = new Date(guild.joinedTimestamp);
         this.botAddedTimestamp = guild.joinedTimestamp;
         this.created = new Date(guild.createdTimestamp);
         this.createdTimestamp = guild.createdTimestamp;
-        this.voiceStates = VoiceStateManager.get(addon.name) || structureHandler.createStructure('Save');
+        this.everyoneRoleId = guild.roles.everyone.id;
         if(validatePermission(getAddonPermission(addon.name), scopes.bitfield.GUILDS)){
             addon.guilds.set(this.id, this);
         }
@@ -289,6 +265,29 @@ class Guild{
         const addonInviteManager = inviteManager.get(this.addon.name) || new Save();
         const guildInviteManager = addonInviteManager.get(this.id) || new Save();
         return guildInviteManager;
+    }
+    get channels(){
+        const addonChannelManager = channelManager.get(this.addon.name) || new Save();
+        const guildChannelManager = addonChannelManager.get(this.id) || new Save();
+        return guildChannelManager;
+    }
+    get emojis(){
+        const addonEmojiManager = emojiManager.get(this.addon.name) || new Save();
+        const guildEmojiManager = addonEmojiManager.get(this.id) || new Save();
+        return guildEmojiManager;
+    }
+    get roles(){
+        const addonRoleManager = roleManager.get(this.addon.name) || new Save();
+        const guildRoleManager = addonRoleManager.get(this.id) || new Save();
+        return guildRoleManager;
+    }
+    get everyoneRole(){
+        return this.roles.filter(role => role.value.id === this.everyoneRoleId).first();
+    }
+    get voiceStates(){
+        const addonVoiceStateManager = VoiceStateManager.get(this.addon.name) || new Save();
+        const guildVoiceStateManager = addonVoiceStateManager.get(this.id) || new Save();
+        return guildVoiceStateManager;
     }
 }
 
