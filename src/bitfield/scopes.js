@@ -16,7 +16,7 @@ module.exports = {
         INTERACTIONS: 8192
     },
     strings: {
-        COMMANDS: "Detect when a command get's executed and make possible changes to them",
+        COMMANDS: "Create commands, detect when a command get's executed and make possible changes to them",
         MEMBERS: "Detect changes to members and make changes to them",
         MESSAGES: "Read messages that are send and make changes to them",
         KICKS: "Detect when a member gets kicked",
