@@ -15,12 +15,12 @@ class Level{
                 if(guildIndex >= 0) userXP.splice(guildIndex, 1);
                 if(amount > guildXP.xp){
                     guildXP.xp = amount;
-                    while(client.getXPForLevel(guildXP.level) < guildXP.xp){
+                    while(client.getXPForLevel(guildXP.level, guildMember.guild.id) < guildXP.xp){
                         guildXP.level += 1;
                     }
                     guildXP.level -= 1;
                 } else if(amount < guildXP.xp) {
-                    while(client.getXPForLevel(guildXP.level) > guildXP.xp){
+                    while(client.getXPForLevel(guildXP.level, guildMember.guild.id) > guildXP.xp){
                         guildXP.level -= 1;
                     }
                 }
@@ -43,7 +43,7 @@ class Level{
                 if(amount < 0) amount = 0;
                 if(guildIndex >= 0) userXP.splice(guildIndex, 1);
                 guildXP.level = amount;
-                guildXP.xp = client.getXPForLevel(amount);
+                guildXP.xp = client.getXPForLevel(amount, guildMember.guild.id);
                 userXP.push(guildXP);
                 guildIndex = userXP.indexOf(guildXP);
                 client.xp.set(guildMember.id, userXP);
