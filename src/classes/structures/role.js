@@ -1,9 +1,24 @@
 const { validatePermission, getAddonPermission, getColorCode } = require('../../utils/functions.js');
 const scopes = require('../../bitfields/scopes.js');
+const roleManager = require('../managers/roleManager.js');
+const guildManager = require('../managers/guildManager.js');
+const Save = require('../save.js');
 
 class Role{
-    constructor(data, addon, guild){
-        this.data = data;
+    constructor(data, addon, guild, structureHandler, cache){
+        if(cache){
+            const addonRoleManager = roleManager.get(addon.name) || new Save();
+            const guildRoleManager = addonRoleManager.get(guild.id) || new Save();
+            guildRoleManager.set(data.id, this);
+            addonRoleManager.set(guild.id, guildRoleManager);
+            roleManager.set(addon.name, addonRoleManager);
+        }
+        this.addon = addon;
+        try{
+            this.editable = data.editable;
+        } catch (err){
+            this.editable = false;
+        }
         this.id = data.id;
         this.string = `<@&${this.id}>`;
         this.color = {
@@ -15,10 +30,9 @@ class Role{
         this.name = data.name;
         this.created = new Date(data.createdTimestamp);
         this.createdTimestamp = data.createdTimestamp;
-        this.guild = guild;
+        this.guildId = guild.id;
         this.permissions = data.permissions;
         this.mentionable = data.mentionable;
-        if(guild) this.guild.roles.set(this.id, this);
         this.setName = function(name, reason){
             return new Promise((resolve, reject) => {
                 if(!validatePermission(getAddonPermission(addon.name), scopes.bitfield.ROLES)) return reject('Missing roles scope in bitfield');
@@ -111,8 +125,9 @@ class Role{
             });
         }
     }
-    get editable(){
-        return this.data.editable;
+    get guild(){
+        const addonGuildManager = guildManager.get(this.addon.name) || new Save();
+        return addonGuildManager.get(this.guildId);
     }
 }
 
