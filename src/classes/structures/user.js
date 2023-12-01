@@ -22,10 +22,10 @@ function getImageOptions(options){
 }
 
 class User{
-    constructor(user, addon, loop, structureHandler){
-        if(loop === false){
+    constructor(user, addon, loop, structureHandler, cache){
+        if(loop === false && cache){
             const addonUserManager = UserManager.get(addon.name) || new Save();
-            addonUserManager.set(user.id, new User(user, addon, true));
+            addonUserManager.set(user.id, new User(user, addon, true, structureHandler, false));
             UserManager.set(addon.name, addonUserManager);
         }
         this.id = user.id;
