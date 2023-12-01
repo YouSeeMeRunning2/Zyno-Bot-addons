@@ -2,7 +2,7 @@ const inviteManager = require('../managers/inviteManager.js');
 const Save = require('../save.js');
 
 class Invite{
-    constructor(data, guild, addon){
+    constructor(data, guild, addon, structureHandler, cache){
         this.code = data.code;
         this.createdTimestamp = data.createdTimestamp;
         this.created = new Date(data.createdTimestamp);
@@ -29,11 +29,13 @@ class Invite{
             });
         };
 
-        const addonInviteManager = inviteManager.get(addon.name) || new Save();
-        const guildInviteManager = addonInviteManager.get(guild.id) || new Save();
-        guildInviteManager.set(this.code, this);
-        addonInviteManager.set(guild.id, guildInviteManager);
-        inviteManager.set(addon.name, addonInviteManager);
+        if(cache){
+            const addonInviteManager = inviteManager.get(addon.name) || new Save();
+            const guildInviteManager = addonInviteManager.get(guild.id) || new Save();
+            guildInviteManager.set(this.code, this);
+            addonInviteManager.set(guild.id, guildInviteManager);
+            inviteManager.set(addon.name, addonInviteManager);
+        }
     }
 }
 
