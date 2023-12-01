@@ -1,7 +1,6 @@
 const { validatePermission, getResolvableDate, getAddonPermission, wait, getClient } = require('../../utils/functions.js');
 const scopes = require('../../bitfields/scopes.js');
 const User = require('./user.js');
-const VoiceState = require('./voiceState.js');
 const MemberManager = require('../managers/memberManager.js');
 const GuildMemberManager = require('../managers/guildMemberManager.js');
 const GuildManager = require('../managers/guildManager.js');
@@ -9,32 +8,31 @@ const Save = require('../save.js');
 const Role = require('./role.js');
 const EconomyBalance = require('./saves/economyBalance.js');
 const Level = require('./saves/level.js');
+const roleManager = require('../managers/roleManager.js');
+const voiceStateManager = require('../managers/voiceStateManager.js');
 
 let client;
 
 class Member extends User{
-	constructor(guildMember, addon, structureHandler){
+	constructor(guildMember, addon, structureHandler, cache){
         client = getClient();
-        super((guildMember.user || client.users.cache.get(guildMember.id)), addon, false, structureHandler);
-        const addonMemberManager = MemberManager.get(addon.name) || new Save();
-        const memberManager = addonMemberManager.get(guildMember.id) || new Save();
-        memberManager.set(guildMember.guild.id, this);
-        addonMemberManager.set(guildMember.id, memberManager);
-        MemberManager.set(addon.name, addonMemberManager);
-        const addonGuildMemberManager = GuildMemberManager.get(addon.name) || new Save();
-        const guildMemberManager = addonGuildMemberManager.get(guildMember.guild.id) || new Save();
-        guildMemberManager.set(guildMember.id, this);
-        addonGuildMemberManager.set(guildMember.guild.id, guildMemberManager);
-        GuildMemberManager.set(addon.name, addonGuildMemberManager);
-        this.guildId = guildMember.guild.id;
-        const addonGuildManager = GuildManager.get(addon.name) || new Save();
-        this.guild = addonGuildManager.get(guildMember.guild.id);
-        this.roles = new Save();
-        const guildRoles = Array.from(guildMember.roles.cache.values());
-        for(var i = 0; i < guildRoles.length; i++){
-            let guildRole = guildRoles[i];
-            this.roles.set(guildRole.id, new Role(guildRole, addon, this.guild));
+        super((guildMember.user ?? client.users.cache.get(guildMember.id)), addon, false, structureHandler, cache);
+        this.addon = addon;
+        if(cache){
+            const addonMemberManager = MemberManager.get(addon.name) || new Save();
+            const memberManager = addonMemberManager.get(guildMember.id) || new Save();
+            memberManager.set(guildMember.guild.id, this);
+            addonMemberManager.set(guildMember.id, memberManager);
+            MemberManager.set(addon.name, addonMemberManager);
+            const addonGuildMemberManager = GuildMemberManager.get(addon.name) || new Save();
+            const guildMemberManager = addonGuildMemberManager.get(guildMember.guild.id) || new Save();
+            guildMemberManager.set(guildMember.id, this);
+            addonGuildMemberManager.set(guildMember.guild.id, guildMemberManager);
+            GuildMemberManager.set(addon.name, addonGuildMemberManager);
         }
+        this.guildId = guildMember.guild?.id;
+        const guildRoles = Array.from(guildMember.roles.cache.keys());
+        this._roles = guildRoles;
         this.nickname = guildMember.nickname;
         this.displayName = this.nickname || this.username;
 		this.permissions = guildMember.permissions;
@@ -49,7 +47,6 @@ class Member extends User{
         this.bannable = guildMember.bannable;
         this.kickable = guildMember.kickable;
         this.voiceConnected = typeof guildMember.voice.channelId === 'string';
-        this.voice = new VoiceState(guildMember.voice, addon);
         this.getInviteInfo = () => {
             if(!validatePermission(getAddonPermission(addon.name), scopes.bitfield.MEMBERS)) throw new Error(`Missing members scope in bitfield`);
             const userinfo = client.userinfo.get(guildMember.id) || [];
@@ -238,6 +235,26 @@ class Member extends User{
     }
     isMutable(){
         return this.moderateable;
+    }
+    get guild(){
+        const addonGuildManager = GuildManager.get(this.addon.name) || new Save();
+        return addonGuildManager.get(this.guildId);
+    }
+    get roles(){
+        const addonRoleManager = roleManager.get(this.addon.name) || new Save();
+        const guildRoleManager = addonRoleManager.get(this.guildId) || new Save();
+        const roles = new Save();
+        for(let i = 0; i < this._roles.length; i++){
+            var role = guildRoleManager.get(this._roles[i]);
+            if(role) roles.set(this._roles[i], role);
+            else continue;
+        }
+        return roles;
+    }
+    get voiceState(){
+        const addonVoiceStateManager = voiceStateManager.get(this.addon.name) || new Save();
+        const guildVoiceStateManager = addonVoiceStateManager.get(this.guildId) || new Save();
+        return guildVoiceStateManager.get(this.id);
     }
 }
 
