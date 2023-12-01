@@ -1,25 +1,34 @@
 const GuildManager = require('../../managers/guildManager.js');
 const GuildMemberManager = require('../../managers/guildMemberManager.js');
+const channelManager = require('../../managers/channelManager.js');
+const userManager = require('../../managers/userManager.js');
+const messageManager = require('../../managers/messageManager.js');
 const { getMessageContent } = require('../../../utils/messageFunctions.js');
 const Save = require('../../save.js');
 const { ComponentType } = require('discord.js');
 
 class FormInteraction{
     constructor(data, addon, structureHandler){
-        const addonGuildManager = GuildManager.get(addon.name) || new Save();
+        this.addon = addon;
         this.type = "Form";
-        this.guild = addonGuildManager.get(data.guildId);
         this.guildId = data.guildId;
-        this.channel = this.guild ? this.guild.channels.get(data.channelId) : null;
         this.channelId = data.channelId;
-        const addonGuildMemberManager = GuildMemberManager.get(addon.name) || new Save();
-        const GuildMembers = addonGuildMemberManager.get(this.guildId) || new Save();
-        this.member = GuildMembers.get(data.member.id);
-        this.user = structureHandler.createStructure('User', [data.user, addon, false]);
-        this.message = structureHandler.createStructure('Message', [data.message, addon]);
+        this.memberId = data.member?.id;
+        this.messageId = data.message?.id;
         this.customId = data.customId;
         this.id = data.id;
         this.inputs = data.fields.fields.filter(f => f.type === ComponentType.TextInput).map(f => f.value);
+        const addonMessageManager = messageManager.get(this.addon.name) || new Save();
+        const guildMessageManager = addonMessageManager.get(this.guildId) || new Save();
+        const channelMessageManager = guildMessageManager.get(this.channelId) || new Save();
+        this.message = channelMessageManager.get(this.messageId);
+       	if(!this.message){
+            this.message = structureHandler.createStructure('Message', [data.message, addon]);
+            channelMessageManager.set(this.messageId, this.message);
+            guildMessageManager.set(this.channelId, channelMessageManager);
+            addonMessageManager.set(this.guildId, guildMessageManager);
+            messageManager.set(this.addon.name, addonMessageManager);
+        }
         this.isButton = () => {
             return this.type === "Button";
         };
@@ -69,6 +78,24 @@ class FormInteraction{
                 data.update(_content).then(msg => resolve(structureHandler.createStructure('Message', [msg, addon]))).catch(reject);
             });
         };
+    }
+    get member(){
+        const addonGuildMemberManager = GuildMemberManager.get(this.addon.name) || new Save();
+        const GuildMembers = addonGuildMemberManager.get(this.guildId) || new Save();
+        return GuildMembers.get(this.memberId);
+    }
+    get guild(){
+        const addonGuildManager = GuildManager.get(this.addon.name) || new Save();
+        return addonGuildManager.get(this.guildId);
+    }
+    get channel(){
+        const addonChannelManager = channelManager.get(this.addon.name) || new Save();
+        const guildChannelManager = addonChannelManager.get(this.guildId) || new Save();
+        return guildChannelManager.get(this.channelId);
+    }
+    get user(){
+        const addonUserManager = userManager.get(this.addon.name) || new Save();
+        return addonUserManager.get(this.memberId);
     }
 }
 
