@@ -5,17 +5,15 @@ const VoiceChannel = require('./channel/voiceChannel.js');
 const StageChannel = require('./channel/stageChannel.js');
 const VoiceStateManager = require('../managers/voiceStateManager.js');
 const scopes = require('../../bitfields/scopes.js');
+const guildManager = require('../managers/guildManager.js');
+const channelManager = require('../managers/channelManager.js');
 
 class VoiceState{
-    constructor(voiceState, addon){
+    constructor(voiceState, addon, structureHandler, cache){
+        this.addon = addon;
         if(typeof voiceState.member === 'object' && !Array.isArray(voiceState.member) && voiceState.member !== null){
-            const addonVoiceStateManager = VoiceStateManager.get(addon.name) || new Save();
-            addonVoiceStateManager.set(voiceState.member.id, this);
-            VoiceStateManager.set(addon.name, addonVoiceStateManager);
-            this.member = ((GuildMemberManager.get(addon.name) || new Save()).get(voiceState.member.guild.id) || new Save()).get(voiceState.member.id);
             this.id = voiceState.member.id;
         } else {
-            this.member = null;
             this.id = null;
         }
         this.connected = typeof voiceState.channelId === 'string';
@@ -28,8 +26,15 @@ class VoiceState{
         this.serverDeaf = voiceState.serverDeaf;
         this.mute = this.selfMute || this.serverMute || false;
         this.deaf = this.selfDeaf || this.serverDeaf || false;
+        this.guildId = (voiceState.member ?? voiceState.channel)?.guild?.id;
         this.channelId = voiceState.channelId || null;
-        this.channel = typeof this.channelId === 'string' ? (this.member.guild.channels.get(this.channelId) || null) : null;
+        if(cache){
+            const addonVoiceStateManager = VoiceStateManager.get(addon.name) || new Save();
+            const guildVoiceStateManager = addonVoiceStateManager.get(this.guildId) || new Save();
+            guildVoiceStateManager.set(this.id, this);
+            addonVoiceStateManager.set(this.guildId, guildVoiceStateManager);
+            VoiceStateManager.set(addon.name, addonVoiceStateManager);
+        }
         this.disconnect = function(reason){
             return new Promise((resolve, reject) => {
                 if(!validatePermission(getAddonPermission(addon.name), scopes.bitfield.MEMBERS)) return reject(`Missing members scope in bitfield`);
@@ -70,6 +75,19 @@ class VoiceState{
                 }).catch(reject);
             })
         }
+    }
+    get member(){
+        return ((GuildMemberManager.get(addon.name) || new Save()).get(this.guildId) || new Save()).get(this.id);
+    }
+    get channel(){
+        if(this.channelId === null) return null;
+        const addonChannelManager = channelManager.get(this.addon.name) || new Save();
+        const guildChannelManager = addonChannelManager.get(this.guildId) || new Save();
+        return guildChannelManager.get(this.channelId);
+    }
+    get guild(){
+        const addonGuildManager = guildManager.get(this.addon.name) || new Save();
+        return addonGuildManager.get(this.guildId);
     }
 }
 
