@@ -1,5 +1,6 @@
 const BaseChannel = require('./base.js');
 const CategoryChannel = require('./categoryChannel.js');
+const guildManager = require('../../managers/guildManager.js');
 const { validatePermission, getAddonPermission, getResolvableDate } = require('../../../utils/functions.js');
 const scopes = require('../../../bitfields/scopes.js');
 const Permissions = require('../permissions.js');
@@ -10,9 +11,9 @@ const Save = require('../../save.js');
 class GuildChannel extends BaseChannel{
 	constructor(data, addon, guild){
         super(data, addon);
+        this.addon = addon;
         this.viewable = data.viewable;
         this.name = data.name;
-        this.guild = guild;
         this.guildId = guild.id;
         this.manageable = data.manageable;
         this.position = data.position;
@@ -145,6 +146,10 @@ class GuildChannel extends BaseChannel{
                 data.setRateLimitPerUser(resolveDate, reason).then(ch => resolve(new GuildChannel(ch, addon, guild))).catch(reject);
             });
         }
+    }
+    get guild(){
+        const addonGuildManager = guildManager.get(this.addon.name) || new Save();
+        return addonGuildManager.get(this.guildId);
     }
 }
 
