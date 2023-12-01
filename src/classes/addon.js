@@ -8,6 +8,7 @@ const CommandBuilder = require('./builders/commandBuilder.js');
 const scopes = require('../bitfields/scopes.js');
 const { getClientParser } = require('../utils/parser.js');
 const HttpServerHandler = require('./server/handler.js');
+const DiscordJS = require('discord.js');
 
 const clientParser = getClientParser();
 
@@ -119,6 +120,13 @@ class Addon extends EventEmitter{
             if(typeof commandJSON.name !== 'string') return reject('Invalid command: Command name must be a string');
             if(typeof commandJSON.description !== 'string') return reject('Invalid command: Command description must be a string');
             commandRegistrant.register(commandJSON, this.name).then(resolve).catch(reject);
+        });
+    }
+    removeCommand(commandName){
+        return new Promise((resolve, reject) => {
+            if(!validatePermission(getAddonPermission(this.name), scopes.bitfield.COMMANDS)) return reject(`The addon doesn't have the permissions to create a command`);
+            if(typeof commandName !== 'string') return reject(`Invalid command name: Command name must be a type of string`);
+            commandRegistrant.removeCommand(commandName, this.name).then(resolve).catch(reject);
         });
     }
     createEventListener(){
@@ -242,6 +250,33 @@ class Addon extends EventEmitter{
                 });
             });
         })
+    }
+    getCommandData(commandName){
+        return new Promise((resolve, reject) => {
+            let addonInfo = addons.get(this.name);
+            if(!addonInfo) return reject('Addon hasn\'t been enabled by the owner of the bot');
+            if(addonInfo.verified === false || addonInfo.allowed === false) return reject('Addon hasn\'t been enabled by the owner of the bot');
+            if(!validatePermission(getAddonPermission(this.name), scopes.bitfield.COMMANDS)) return reject('The addon doesn\'t have permissions to get information about commands');
+            if(typeof commandName !== 'string') return reject('A command name is required to provide');
+            let client = clientParser.getClient();
+            const botCommand = client.commands.get(commandName);
+            const addonCommand = client.addons.get(commandName);
+            if(!botCommand && !addonCommand) return resolve(undefined);
+            else if(!botCommand) return resolve({...addonCommand})
+            else {
+                let commandData = {
+                    name: botCommand.data.name,
+                    description: botCommand.data.description,
+                    options: botCommand.data.options,
+                    category: botCommand.data.category.toLowerCase(),
+                    nsfw: botCommand.data.nsfw || false,
+                    dm_permission: false,
+                    permissions: typeof botCommand.data.permissions === 'string' ? DiscordJS.PermissionFlagsBits[permissions].toString() : null,
+                    overwrite: false
+                };
+                return resolve(commandData);
+            }
+        });
     }
     name = null;
     description = null;
