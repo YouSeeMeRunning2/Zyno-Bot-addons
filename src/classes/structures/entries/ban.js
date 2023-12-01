@@ -1,9 +1,11 @@
-const User = require('../user.js');
+const userManager = require('../../managers/userManager.js');
+const Save = require('../../save.js');
 
 class BanEntry{
     constructor(user, guild, entry, addon){
-        this.executor = new User(entry.executor, addon, false);
-        this.user = new User(user, addon, false);
+        const addonUserManager = userManager.get(addon.name) || new Save();
+        this.executor = addonUserManager.get(entry.executor.id);
+        this.user = addonUserManager.get(user.id);
         this.banned = new Date(entry.createdTimestamp);
         this.bannedTimestamp = entry.createdTimestamp;
         this.reason = entry.reason;
