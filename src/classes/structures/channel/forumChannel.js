@@ -3,12 +3,20 @@ const CategoryChannel = require('./categoryChannel.js');
 const { validatePermission, getAddonPermission, getResolvableDate } = require('../../../utils/functions.js');
 const scopes = require('../../../bitfields/scopes.js');
 const Save = require("../../save.js");
+const channelManager = require('../../managers/channelManager.js');
 
 const validAutoArchiveDates = [60, 1440, 10080, 4320];
 
 class ForumChannel extends GuildChannel{
-    constructor(data, addon, guild, structureHandler){
+    constructor(data, addon, guild, structureHandler, cache){
         super(data, addon, guild);
+        if(cache){
+            const addonChannelManager = channelManager.get(addon.name) || new Save();
+            const guildChannelManager = addonChannelManager.get(guild.id) || new Save();
+            guildChannelManager.set(data.id, this);
+            addonChannelManager.set(guild.id, guildChannelManager);
+            channelManager.set(addon.name, addonChannelManager);
+        }
         this.topic = data.topic;
         this.autoArchiveThreads = typeof data.defaultAutoArchiveDuration === 'number' ? data.defaultAutoArchiveDuration * 60 * 1000 : 0;
         this.threads = new Save();
@@ -17,7 +25,6 @@ class ForumChannel extends GuildChannel{
             var guildThread = guildThreads[i];
             structureHandler.createStructure('ThreadChannel', [guildThread, addon, guild]);
         }
-        if(guild) guild.channels.set(this.id, this);
         if(validatePermission(getAddonPermission(addon.name), scopes.bitfield.CHANNELS)){
             addon.channels.set(this.id, this);
         }
