@@ -3,10 +3,18 @@ const { validatePermission, getAddonPermission } = require('../../../utils/funct
 const scopes = require('../../../bitfields/scopes.js');
 const Permissions = require('../permissions.js');
 const Save = require('../../save.js');
+const channelManager = require('../../managers/channelManager.js');
 
 class CategoryChannel extends BaseChannel{
-    constructor(data, addon, guild, structureHandler){
+    constructor(data, addon, guild, structureHandler, cache){
         super(data, addon);
+        if(cache){
+            const addonChannelManager = channelManager.get(addon.name) || new Save();
+            const guildChannelManager = addonChannelManager.get(guild.id) || new Save();
+            guildChannelManager.set(data.id, this);
+            addonChannelManager.set(guild.id, guildChannelManager);
+            channelManager.set(addon.name, addonChannelManager);
+        }
         this.viewable = data.viewable;
         this.name = data.name;
         this.position = data.position;
@@ -20,7 +28,6 @@ class CategoryChannel extends BaseChannel{
             var permission = permissions[i];
             this.permissions.set(permission.id, new Permissions(permission, this));
         }
-        if(guild) guild.channels.set(this.id, this);
         if(validatePermission(getAddonPermission(addon.name), scopes.bitfield.CHANNELS)){
             addon.channels.set(this.id, this);
         }
