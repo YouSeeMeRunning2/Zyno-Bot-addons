@@ -6,7 +6,7 @@ const path = require('path');
 const fs = require('fs/promises');
 const { existsSync } = require('fs');
 
-let client, presenceTimeout = undefined, presenceOptions = {}, presenceFunctions = [], editTimeout = undefined, editOptions = {}, editFunctions = [];
+let client = null, presenceTimeout = undefined, presenceOptions = {}, presenceFunctions = [], editTimeout = undefined, editOptions = {}, editFunctions = [];
 function updatePresence(){
     if(presenceTimeout !== undefined){
         clearTimeout(presenceTimeout);
@@ -61,7 +61,7 @@ function updateUser(){
 
 class Bot{
     constructor(addon){
-        client = getClient();
+        if(!client) client = getClient();
         this.setActivity = function(activity){
             return new Promise((resolve, reject) => {
                 if(!validatePermission(getAddonPermission(addon.name), scopes.bitfield.BOT)) return reject(`Missing bot scope in bitfield`);
