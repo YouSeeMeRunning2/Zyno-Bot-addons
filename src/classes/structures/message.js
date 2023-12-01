@@ -4,6 +4,7 @@ const scopes = require('../../bitfields/scopes.js');
 const Save = require('../save.js');
 const MemberManager = require('../managers/memberManager.js');
 const UserManager = require('../managers/userManager.js');
+const channelManager = require('../managers/channelManager.js');
 const Emoji = require('./emoji.js');
 const EmojiCollector = require('./collectors/emojiCollector.js');
 const InteractionCollector = require('./collectors/interactionCollector.js');
@@ -31,7 +32,9 @@ class Message{
         this.id = data.id;
         this.attachments = new Save(data.attachments);
         this.url = data.url;
-        this.channel = data.channel.isDMBased() ? structureHandler.createStructure('DMChannel', [data.channel, addon]) : (this.guild !== null && this.guild !== undefined ? this.guild.channels.get(data.channelId) : null);
+        const addonChannelManager = channelManager.get(addon.name) || new Save();
+        const guildChannelManager = addonChannelManager.get(data.channel.isDMBased() ? undefined : data.guild.id) || new Save();
+        this.channel = data.channel.isDMBased() ? structureHandler.createStructure('DMChannel', [data.channel, addon]) : (guildChannelManager.get(data.id) ?? null);
         this.deletable = data.deletable;
         this.mentions = structureHandler.createStructure('Mentions', [data, addon, this.guild]);
         this.content = data.content || '';
