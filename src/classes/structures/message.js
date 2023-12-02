@@ -1,4 +1,4 @@
-const { validatePermission, getAddonPermission, getClientParser } = require('../../utils/functions.js');
+const { validatePermission, getAddonPermission, getClientParser, getClient } = require('../../utils/functions.js');
 const { getMessageContent } = require('../../utils/messageFunctions.js');
 const scopes = require('../../bitfields/scopes.js');
 const Save = require('../save.js');
@@ -11,8 +11,19 @@ const InteractionCollector = require('./collectors/interactionCollector.js');
 
 const validAutoArchiveDates = [60, 1440, 10080, 4320];
 
+let client = null;
+
 class Message{
 	constructor(data, addon, structureHandler){
+        if(!client){
+            client = getClient();
+        }
+        if(!data.channel){
+            data.channel = client.channels.cache.get(data.channelId);
+        }
+        if(!data.guild){
+            data.guild = client.guilds.cache.get(data.guildId);
+        }
         if(!data.channel.isDMBased()){
             const addonMemberManager = MemberManager.get(addon.name) || new Save();
             const memberManager = addonMemberManager.get((data.author || data.member).id) || new Save();
@@ -34,7 +45,7 @@ class Message{
         this.url = data.url;
         const addonChannelManager = channelManager.get(addon.name) || new Save();
         const guildChannelManager = addonChannelManager.get(data.channel.isDMBased() ? undefined : data.guild.id) || new Save();
-        this.channel = data.channel.isDMBased() ? structureHandler.createStructure('DMChannel', [data.channel, addon]) : (guildChannelManager.get(data.id) ?? null);
+        this.channel = data.channel.isDMBased() ? structureHandler.createStructure('DMChannel', [data.channel, addon]) : (guildChannelManager.get(data.channel.id) ?? null);
         this.deletable = data.deletable;
         this.mentions = structureHandler.createStructure('Mentions', [data, addon, this.guild]);
         this.content = data.content || '';
