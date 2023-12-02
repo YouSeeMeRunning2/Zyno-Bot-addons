@@ -1,7 +1,7 @@
 const Save = require('./save.js');
 const User = require('./structures/user.js');
 const Role = require('./structures/role.js');
-const { getClientParser, getClient } = require('../utils/functions.js');
+const { getClientParser, getClient, validatePermission, getAddonPermission } = require('../utils/functions.js');
 const { getMessageContent } = require('../utils/messageFunctions.js');
 const { ApplicationCommandOptionType, ChannelType } = require('discord.js');
 const channelManager = require('./managers/channelManager.js');
@@ -10,6 +10,7 @@ const userManager = require('./managers/userManager.js');
 const memberManager = require('./managers/guildMemberManager.js');
 const guildManager = require('./managers/guildManager.js');
 const messageManager = require('./managers/messageManager.js');
+const scopes = require('../bitfields/scopes.js');
 
 function commandResolver(data, save, guild, structureHandler, addonData, defaultData){
     const addonChannelManager = channelManager.get(addonData.addon.name) || new Save();
@@ -111,7 +112,7 @@ class Command{
         }
         this.executeCommand = (commandName, args) => {
             return new Promise((resolve, reject) => {
-                if(!validatePermission(getAddonPermission(addon.name), scopes.bitfield.COMMANDS)) return reject(`Missing commands scope in bitfield`);
+                if(!validatePermission(getAddonPermission(addonData.addon.name), scopes.bitfield.COMMANDS)) return reject(`Missing commands scope in bitfield`);
                 if(typeof commandName !== 'string') return reject(`Command name must be a type of string`);
                 if(!Array.isArray(args)){
                     args = this.args;
@@ -120,9 +121,9 @@ class Command{
                 let client = clientParser.getClient();
                 const cmd = client.commands.get(commandName);
                 if(cmd){
-                    cmd.run(client, args, data, true);
+                    cmd.run(client, args, data, interaction);
                 } else {
-                    client.clientParser.interactionHandler.emit('execute', data, false);
+                    client.clientParser.interactionHandler.emit('execute', data, interaction);
                 }
                 resolve();
             });
