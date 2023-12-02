@@ -6,7 +6,7 @@ const messageManager = require('../../managers/messageManager.js');
 const { getMessageContent } = require('../../../utils/messageFunctions.js');
 const Save = require('../../save.js');
 const FormBuilder = require('../../builders/formBuilder.js');
-const { ModalBuilder, ActionRowBuilder, TextInputBuilder } = require('discord.js');
+const { ModalBuilder, InteractionResponse, ActionRowBuilder, TextInputBuilder } = require('discord.js');
 
 class ButtonInteraction{
     constructor(data, addon, structureHandler){
@@ -57,22 +57,22 @@ class ButtonInteraction{
             return new Promise((resolve, reject) => {
                 if(content.length === 0) return reject(`At least one argument must be given`);
                 let _content = getMessageContent(content);
-                if(!data.replied && !data.deferred) data.reply({..._content, fetchReply: true}).then(msg => resolve(structureHandler.createStructure('Message', [msg, addon]))).catch(reject);
-                else data.editReply({..._content, fetchReply: true}).then(msg => resolve(structureHandler.createStructure('Message', [msg, addon]))).catch(reject);
+                if(!data.replied && !data.deferred) data.reply(_content).then(msg => resolve(structureHandler.createStructure('Message', [msg, addon]))).catch(reject);
+                else data.editReply(_content).then(i => resolve(structureHandler.createStructure('Message', [i instanceof InteractionResponse ? i.interaction.message : i, addon]))).catch(reject);
             });
         };
         this.followUp = function(...content){
             return new Promise((resolve, reject) => {
                 if(content.length === 0) return reject(`At least one argument must be given`);
                 let _content = getMessageContent(content);
-                data.followUp({..._content, fetchReply: true}).then(msg => resolve(structureHandler.createStructure('Message', [msg, addon]))).catch(reject);
+                data.followUp(_content).then(i => resolve(structureHandler.createStructure('Message', [i instanceof InteractionResponse ? i.interaction.message : i, addon]))).catch(reject);
             });
         };
         this.update = function(...content){
             return new Promise((resolve, reject) => {
                 if(content.length === 0) return reject(`At least one argument must be given`);
                 let _content = getMessageContent(content);
-                data.update({..._content, fetchReply: true}).then(msg => resolve(structureHandler.createStructure('Message', [msg, addon]))).catch(reject);
+                data.update(_content).then(i => resolve(structureHandler.createStructure('Message', [i instanceof InteractionResponse ? i.interaction.message : i, addon]))).catch(reject);
             });
         };
         this.sendForm = function(form){
