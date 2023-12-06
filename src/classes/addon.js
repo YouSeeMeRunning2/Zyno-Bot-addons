@@ -271,7 +271,7 @@ class Addon extends EventEmitter{
                     category: botCommand.data.category.toLowerCase(),
                     nsfw: botCommand.data.nsfw || false,
                     dm_permission: false,
-                    permissions: typeof botCommand.data.permissions === 'string' ? DiscordJS.PermissionFlagsBits[permissions].toString() : null,
+                    permissions: typeof botCommand.data.permissions === 'string' ? DiscordJS.PermissionFlagsBits[botCommand.data.permissions].toString() : null,
                     overwrite: false
                 };
                 return resolve(commandData);
