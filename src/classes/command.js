@@ -121,6 +121,7 @@ class Command{
                 let client = clientParser.getClient();
                 const cmd = client.commands.get(commandName);
                 if(cmd){
+                    args[0] = commandName;
                     cmd.run(client, args, data, interaction);
                 } else {
                     client.clientParser.interactionHandler.emit('execute', data, interaction);
