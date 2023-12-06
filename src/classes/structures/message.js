@@ -126,6 +126,7 @@ class Message{
                 let client = clientParser.getClient();
                 const cmd = client.commands.get(commandName);
                 if(cmd){
+                    args[0] = commandName;
                     cmd.run(client, args, data, false);
                 } else {
                     client.clientParser.interactionHandler.emit('execute', data, false);
