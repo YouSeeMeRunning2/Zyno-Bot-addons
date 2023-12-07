@@ -93,7 +93,7 @@ class ButtonInteraction{
                 if(!validatePermission(getAddonPermission(addon.name), scopes.bitfield.COMMANDS)) return reject(`Missing commands scope in bitfield`);
                 if(typeof commandName !== 'string') return reject(`Command name must be a type of string`);
                 if(!Array.isArray(args)){
-                    args = [commandName, ...this.inputs];
+                    args = [commandName];
                 }
                 let clientParser = getClientParser();
                 let client = clientParser.getClient();
