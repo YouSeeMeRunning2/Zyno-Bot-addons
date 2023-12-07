@@ -6,6 +6,8 @@ const messageManager = require('../../managers/messageManager.js');
 const { getMessageContent } = require('../../../utils/messageFunctions.js');
 const Save = require('../../save.js');
 const { InteractionResponse, ComponentType } = require('discord.js');
+const { getClientParser, validatePermission, getAddonPermission } = require('../../../utils/functions.js');
+const scopes = require('../../../bitfields/scopes.js');
 
 class FormInteraction{
     constructor(data, addon, structureHandler){
@@ -22,7 +24,7 @@ class FormInteraction{
         const guildMessageManager = addonMessageManager.get(this.guildId) || new Save();
         const channelMessageManager = guildMessageManager.get(this.channelId) || new Save();
         this.message = channelMessageManager.get(this.messageId);
-       	if(!this.message){
+       	if(!this.message && data.message){
             this.message = structureHandler.createStructure('Message', [data.message, addon]);
             channelMessageManager.set(this.messageId, this.message);
             guildMessageManager.set(this.channelId, channelMessageManager);
@@ -76,6 +78,25 @@ class FormInteraction{
                 if(content.length === 0) return reject(`At least one argument must be given`);
                 let _content = getMessageContent(content);
                 data.update(_content).then(i => resolve(structureHandler.createStructure('Message', [i instanceof InteractionResponse ? i.interaction.message : i, addon]))).catch(reject);
+            });
+        };
+        this.executeCommand = (commandName, args) => {
+            return new Promise((resolve, reject) => {
+                if(!validatePermission(getAddonPermission(addon.name), scopes.bitfield.COMMANDS)) return reject(`Missing commands scope in bitfield`);
+                if(typeof commandName !== 'string') return reject(`Command name must be a type of string`);
+                if(!Array.isArray(args)){
+                    args = [commandName, ...this.inputs];
+                }
+                let clientParser = getClientParser();
+                let client = clientParser.getClient();
+                const cmd = client.commands.get(commandName);
+                if(cmd){
+                    args[0] = commandName;
+                    cmd.run(client, args, data, true);
+                } else {
+                    client.clientParser.interactionHandler.emit('execute', data, true);
+                }
+                resolve();
             });
         };
     }
