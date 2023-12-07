@@ -5,6 +5,7 @@ const Command = require('../command.js');
 const { handleEvents, createStructures } = require('./eventHandler.js');
 const { validatePermission, passClientParser } = require('../../utils/functions.js');
 const bitfields = require('../../bitfields/scopes.js');
+const structureHandler = require('./structureHandler.js');
 var client = null;
 
 let receivedAddons = [];
@@ -60,7 +61,7 @@ class ClientParser extends EventEmitter{
                         const addonData = addons.get(commandListener.addonName);
                         if(!addonData) return accept();
                         if(!validatePermission(addonData.permissions, bitfields.bitfield.COMMANDS)) return accept();
-                        const command = new Command(data, interaction, {name: commandName, description: null}, addonData);
+                        const command = new Command(data, interaction, {name: commandName, description: null}, addonData, structureHandler);
                         if(commandListener.listener.listenerCount(commandName) > 0){
                             commandListener.listener.emit(commandName, command, accept, stop);
                         } else {
