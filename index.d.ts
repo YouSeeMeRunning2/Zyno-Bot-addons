@@ -1139,6 +1139,13 @@ declare class MenuInteraction{
      * @param form The form the member who selected a value from the menu should see
      */
     sendForm(form: FormBuilder) : Promise<void>;
+
+    /**
+     * Executes a command based on the current interaction
+     * @param commandName The name of the command you'd like to execute
+     * @param args The arguments you'd like to pass to the command
+     */
+    executeCommand(commandName: string, args?: [any]) : void;
 }
 
 declare class ButtonInteraction{
@@ -1208,6 +1215,13 @@ declare class ButtonInteraction{
      * @param form The form the member who pressed the button should see
      */
     sendForm(form: FormBuilder) : Promise<void>;
+
+    /**
+     * Executes a command based on the current interaction
+     * @param commandName The name of the command you'd like to execute
+     * @param args The arguments you'd like to pass to the command
+     */
+    executeCommand(commandName: string, args?: [any]) : void;
 }
 
 declare class FormInteraction{
@@ -1277,6 +1291,13 @@ declare class FormInteraction{
      * @param content The content of the new message
      */
     update(...content: [MessageContentType]) : Promise<Message>;
+
+    /**
+     * Executes a command based on the current interaction
+     * @param commandName The name of the command you'd like to execute
+     * @param args The arguments you'd like to pass to the command
+     */
+    executeCommand(commandName: string, args?: [any]) : void;
 }
 
 declare class Level{
@@ -1327,6 +1348,7 @@ declare class VoiceState{
     mute: boolean;
     deaf: boolean;
     channelId: string | null;
+    guild: Guild;
     guildId: string | undefined;
     channel: ChannelType;
     
