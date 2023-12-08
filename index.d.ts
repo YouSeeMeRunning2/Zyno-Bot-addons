@@ -1616,6 +1616,7 @@ declare class Guild{
     ownerId: string;
     verified: boolean;
     verificationLevel: number;
+    boosts: number;
     emojis: Save<string, Emoji>;
     roles: Save<string, Role>;
     everyoneRole: Role;
