@@ -48,7 +48,7 @@ class Guild{
         this.created = new Date(guild.createdTimestamp);
         this.createdTimestamp = guild.createdTimestamp;
         this.everyoneRoleId = guild.roles.everyone.id;
-        this.boosts = data.premiumSubscriptionCount;
+        this.boosts = guild.premiumSubscriptionCount;
         if(validatePermission(getAddonPermission(addon.name), scopes.bitfield.GUILDS)){
             addon.guilds.set(this.id, this);
         }
