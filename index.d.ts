@@ -278,6 +278,7 @@ type BotEvents = {
     guildNameChange: [Guild, Guild, BaseEntry];
     guildDescriptionChange: [Guild, Guild, BaseEntry];
     guildOwnerChange: [Guild, Guild, BaseEntry];
+    guildBoost: [Guild, Guild, BaseEntry];
     guildAdd: [Guild];
     inviteCreate: [Invite];
     inviteDelete: [Invite];
