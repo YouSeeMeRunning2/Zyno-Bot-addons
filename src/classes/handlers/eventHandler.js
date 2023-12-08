@@ -751,6 +751,8 @@ function handleEvents(client, parser){
                             emitEvent(addonInfo.addon.name, 'guildDescriptionChange', scopes.bitfield.GUILDS, oldGuild, newGuild, entry);
                         } else if(oldGuild.ownerId !== newGuild.ownerId){
                             emitEvent(addonInfo.addon.name, 'guildOwnerChange', scopes.bitfield.GUILDS, oldGuild, newGuild, entry);
+                        } else if(oldGuild.boosts !== newGuild.boosts){
+                            emitEvent(addonInfo.addon.name, 'guildBoost', scopes.bitfield.GUILDS, oldGuild, newGuild, entry);
                         }
 
                         oldGuild = null;
