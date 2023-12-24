@@ -61,8 +61,8 @@ class ClientParser extends EventEmitter{
                         const addonData = addons.get(commandListener.addonName);
                         if(!addonData) return accept();
                         if(!validatePermission(addonData.permissions, bitfields.bitfield.COMMANDS)) return accept();
-                        const command = new Command(data, interaction, {name: commandName, description: null}, addonData, structureHandler);
                         if(commandListener.listener.listenerCount(commandName) > 0){
+                            const command = new Command(data, interaction, {name: commandName, description: null}, addonData, structureHandler);
                             commandListener.listener.emit(commandName, command, accept, stop);
                         } else {
                             accept();
