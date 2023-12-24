@@ -23,7 +23,7 @@ function commandResolver(data, save, guild, structureHandler, addonData, default
         if(item.type === ApplicationCommandOptionType.Subcommand || item.type === ApplicationCommandOptionType.SubcommandGroup){
             add = [item.name];
             let newSave = new Save();
-            add.push(...commandResolver(item.options, newSave, structureHandler));
+            add.push(...commandResolver(item.options, newSave, guild, structureHandler, addonData, defaultData));
             save.set(item.name, newSave);
         } else if(item.type === ApplicationCommandOptionType.String){
             add = item.value.split(' ');
