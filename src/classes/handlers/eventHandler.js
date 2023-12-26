@@ -100,7 +100,7 @@ function handleEvents(client, parser){
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
-                if(addonInfo.verified === true && addonInfo.allowed === true){
+                if(addonInfo.verified === true && addonInfo.allowed === true && addonInfo.addon.ready === true){
                     if(validatePermission(getAddonPermission(addonInfo.addon.name), scopes.bitfield.GUILDS)){
                         const addonGuilds = GuildManager.get(addonInfo.addon.name) || structureHandler.createStructure('Save');
                         const cachedGuild = addonGuilds.get(invite.guild.id);
@@ -122,7 +122,7 @@ function handleEvents(client, parser){
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
-                if(addonInfo.verified === true && addonInfo.allowed === true){
+                if(addonInfo.verified === true && addonInfo.allowed === true && addonInfo.addon.ready === true){
                     if(validatePermission(getAddonPermission(addonInfo.addon.name), scopes.bitfield.GUILDS)){
                         const addonInviteManager = inviteManager.get(addonInfo.addon.name) || structureHandler.createStructure('Save');
                         const guildInviteManager = addonInviteManager.get(invite.guild.id) || structureHandler.createStructure('Save');
@@ -145,7 +145,7 @@ function handleEvents(client, parser){
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
-                if(addonInfo.verified === true && addonInfo.allowed === true){
+                if(addonInfo.verified === true && addonInfo.allowed === true && addonInfo.addon.ready === true){
                     const addonVoiceStateManager = voiceStateManager.get(addonInfo.addon.name) || structureHandler.createStructure('Save');
                     const guildVoiceStateManager = addonVoiceStateManager.get(_oldState.guild.id) || structureHandler.createStructure('Save');
                     let oldState = guildVoiceStateManager.get(_oldState.member.id);
@@ -169,7 +169,7 @@ function handleEvents(client, parser){
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
-                if(addonInfo.verified === true && addonInfo.allowed === true){
+                if(addonInfo.verified === true && addonInfo.allowed === true && addonInfo.addon.ready === true){
                     let member = structureHandler.createStructure('Member', [_member, addonInfo.addon]);
                     emitEvent(addonInfo.addon.name, 'memberAdd', scopes.bitfield.MEMBERS, member);
 
@@ -184,7 +184,7 @@ function handleEvents(client, parser){
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
-                if(addonInfo.verified === true && addonInfo.allowed === true){
+                if(addonInfo.verified === true && addonInfo.allowed === true && addonInfo.addon.ready === true){
 
                     const addonG = GuildMemberManager.get(addonInfo.addon.name) || structureHandler.createStructure('Save');
                     const g = addonG.get(_member.guild.id) || structureHandler.createStructure('Save');
@@ -218,7 +218,7 @@ function handleEvents(client, parser){
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
-                if(addonInfo.verified === true && addonInfo.allowed === true){
+                if(addonInfo.verified === true && addonInfo.allowed === true && addonInfo.addon.ready === true){
 
                     const addonG = GuildMemberManager.get(addonInfo.addon.name) || structureHandler.createStructure('Save');
                     const g = addonG.get(_member.guild.id);
@@ -259,7 +259,7 @@ function handleEvents(client, parser){
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
-                if(addonInfo.verified === true && addonInfo.allowed === true){
+                if(addonInfo.verified === true && addonInfo.allowed === true && addonInfo.addon.ready === true){
                     const addonGuildMemberManager = GuildMemberManager.get(addonInfo.addon.name) || structureHandler.createStructure('Save');
                     const guildGuildMemberManager = addonGuildMemberManager.get(_oldMember.guild.id) || structureHandler.createStructure('Save');
                     let oldMember = guildGuildMemberManager.get(_oldMember.id);
@@ -283,7 +283,7 @@ function handleEvents(client, parser){
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
-                if(addonInfo.verified === true && addonInfo.allowed === true){
+                if(addonInfo.verified === true && addonInfo.allowed === true && addonInfo.addon.ready === true){
                     const addonGuildMemberManager = GuildMemberManager.get(addonInfo.addon.name) || structureHandler.createStructure('Save');
                     const guildGuildMemberManager = addonGuildMemberManager.get(_oldMember.guild.id) || structureHandler.createStructure('Save');
                     let oldMember = guildGuildMemberManager.get(_oldMember.id);
@@ -308,7 +308,7 @@ function handleEvents(client, parser){
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
-                if(addonInfo.verified === true && addonInfo.allowed === true){
+                if(addonInfo.verified === true && addonInfo.allowed === true && addonInfo.addon.ready === true){
                     const addonGuildManager = GuildManager.get(addonInfo.addon.name) || structureHandler.createStructure('Save');
                     const cachedGuild = addonGuildManager.get(_oldMember.guild.id);
                     const addonGuildMemberManager = GuildMemberManager.get(addonInfo.addon.name) || structureHandler.createStructure('Save');
@@ -370,9 +370,9 @@ function handleEvents(client, parser){
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
-                if(addonInfo.verified === true && addonInfo.allowed === true){
+                if(addonInfo.verified === true && addonInfo.allowed === true && addonInfo.addon.ready === true){
                     const addonUserManager = userManager.get(addonInfo.addon.name) || structureHandler.createStructure('Save');
-                    let oldUser = addonUserManager.get(_oldUser.id);
+                    let oldUser = addonUserManager.get(_oldUser.id) ?? structureHandler.createStructure('User', [_oldUser, addonInfo.addon, false]);
                     addonUserManager.delete(_oldUser.id);
                     userManager.set(addonInfo.addon.name, addonUserManager);
                     let newUser = structureHandler.createStructure('User', [_newUser, addonInfo.addon, false]);
@@ -397,7 +397,7 @@ function handleEvents(client, parser){
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
-                if(addonInfo.verified === true && addonInfo.allowed === true){
+                if(addonInfo.verified === true && addonInfo.allowed === true && addonInfo.addon.ready === true){
                     const addonG = GuildMemberManager.get(addonInfo.addon.name) || structureHandler.createStructure('Save');
                     const g = addonG.get(ban.guild.id);
                     if(g){
@@ -437,7 +437,7 @@ function handleEvents(client, parser){
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
-                if(addonInfo.verified === true && addonInfo.allowed === true){
+                if(addonInfo.verified === true && addonInfo.allowed === true && addonInfo.addon.ready === true){
                     const addonGuildMemberManager = GuildMemberManager.get(addonInfo.addon.name) || structureHandler.createStructure('Save');
                     const guildGuildMemberManager = addonGuildMemberManager.get(_member.guild.id) || structureHandler.createStructure('Save');
                     let cachedMember = guildGuildMemberManager.get(_member.id);
@@ -454,7 +454,7 @@ function handleEvents(client, parser){
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
-                if(addonInfo.verified === true && addonInfo.allowed === true){
+                if(addonInfo.verified === true && addonInfo.allowed === true && addonInfo.addon.ready === true){
                     const addonChannelManager = channelManager.get(addonInfo.addon.name) || structureHandler.createStructure('Save');
                     const guildChannelManager = addonChannelManager.get(_channel.guild.id) || structureHandler.createStructure('Save');
 
@@ -493,7 +493,7 @@ function handleEvents(client, parser){
             const members = Array.from(_members.values());
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
-                if(addonInfo.verified === true && addonInfo.allowed === true){
+                if(addonInfo.verified === true && addonInfo.allowed === true && addonInfo.addon.ready === true){
                     const addonGuildMemberManager = GuildMemberManager.get(addonInfo.addon.name) || structureHandler.createStructure('Save');
                     const guildGuildMemberManager = addonGuildMemberManager.get(guild.id) || structureHandler.createStructure('Save');
 
@@ -542,7 +542,7 @@ function handleEvents(client, parser){
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
-                if(addonInfo.verified === true && addonInfo.allowed === true){
+                if(addonInfo.verified === true && addonInfo.allowed === true && addonInfo.addon.ready === true){
                     let msg = structureHandler.createStructure('Message', [message, addonInfo.addon]);
                     if(msg.channel){
                         if(validatePermission(getAddonPermission(addonInfo.addon.name), scopes.bitfield.MESSAGES) && (msg.channel.isVoiceStage() || msg.channel.isTextChannel() || msg.channel.isThread() || msg.channel.isVoiceChannel())){
@@ -573,7 +573,7 @@ function handleEvents(client, parser){
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
-                if(addonInfo.verified === true && addonInfo.allowed === true){
+                if(addonInfo.verified === true && addonInfo.allowed === true && addonInfo.addon.ready === true){
                     let executor = structureHandler.createStructure('User', [_executor, addonInfo.addon, false]);
                     let message = structureHandler.createStructure('Message', [_message, addonInfo.addon]);
                     if(validatePermission(getAddonPermission(addonInfo.addon.name), scopes.bitfield.MESSAGES)){
@@ -608,7 +608,7 @@ function handleEvents(client, parser){
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
-                if(addonInfo.verified === true && addonInfo.allowed === true){
+                if(addonInfo.verified === true && addonInfo.allowed === true && addonInfo.addon.ready === true){
                     const addonMessageManager = MessageManager.get(addonInfo.addon.name) || structureHandler.createStructure('Save');
                     const guildMessageManager = addonMessageManager.get(_oldMessage.guild.id) || structureHandler.createStructure('Save');
                     const channelMessageManager = guildMessageManager.get(_oldMessage.channel.id) || structureHandler.createStructure('Save');
@@ -638,7 +638,7 @@ function handleEvents(client, parser){
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
-                if(addonInfo.verified === true && addonInfo.allowed === true){
+                if(addonInfo.verified === true && addonInfo.allowed === true && addonInfo.addon.ready === true){
                     const addonUserManager = userManager.get(addonInfo.addon.name) ?? structureHandler.createStructure('Save');
                     let user = addonUserManager.get(_user.id) ?? structureHandler.createStructure('User', [_user, addonInfo.addon, false]);
                     let reaction = structureHandler.createStructure('Reaction', [_reaction, addonInfo.addon, user]);
@@ -689,7 +689,7 @@ function handleEvents(client, parser){
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
-                if(addonInfo.verified === true && addonInfo.allowed === true){
+                if(addonInfo.verified === true && addonInfo.allowed === true && addonInfo.addon.ready === true){
                     try{
                         await wait(400);
                         await _reaction.message.fetch();
@@ -710,7 +710,7 @@ function handleEvents(client, parser){
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
-                if(addonInfo.verified === true && addonInfo.allowed === true){
+                if(addonInfo.verified === true && addonInfo.allowed === true && addonInfo.addon.ready === true){
                     await createStructures(client, _addons);
                     let guild = addonInfo.addon.guilds.get(_guild.id);
                     emitEvent(addonInfo.addon.name, 'guildAdd', scopes.bitfield.GUILDS, guild);
@@ -727,7 +727,7 @@ function handleEvents(client, parser){
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
-                if(addonInfo.verified === true && addonInfo.allowed === true){
+                if(addonInfo.verified === true && addonInfo.allowed === true && addonInfo.addon.ready === true){
                     _newGuild.fetchAuditLogs({
                         limit: 1,
                         type: AuditLogEvent.GuildUpdate
@@ -768,7 +768,7 @@ function handleEvents(client, parser){
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
-                if(addonInfo.verified === true && addonInfo.allowed === true){
+                if(addonInfo.verified === true && addonInfo.allowed === true && addonInfo.addon.ready === true){
                     const addonGuildManager = GuildManager.get(addonInfo.addon.name) || structureHandler.createStructure('Save');
                     let oldServer = addonGuildManager.get(_oldServer.id);
                     const addonGuildMemberManager = GuildMemberManager.get(addonInfo.addon.name) || structureHandler.createStructure('Save');
@@ -817,7 +817,7 @@ function handleEvents(client, parser){
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
-                if(addonInfo.verified === true && addonInfo.allowed === true){
+                if(addonInfo.verified === true && addonInfo.allowed === true && addonInfo.addon.ready === true){
                     _emoji.guild.fetchAuditLogs({
                         limit: 1,
                         type: AuditLogEvent.EmojiCreate,
@@ -851,7 +851,7 @@ function handleEvents(client, parser){
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
-                if(addonInfo.verified === true && addonInfo.allowed === true){
+                if(addonInfo.verified === true && addonInfo.allowed === true && addonInfo.addon.ready === true){
                     _newEmoji.guild.fetchAuditLogs({
                         limit: 1,
                         type: AuditLogEvent.EmojiUpdate,
@@ -891,7 +891,7 @@ function handleEvents(client, parser){
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
-                if(addonInfo.verified === true && addonInfo.allowed === true){
+                if(addonInfo.verified === true && addonInfo.allowed === true && addonInfo.addon.ready === true){
                     _emoji.guild.fetchAuditLogs({
                         limit: 1,
                         type: AuditLogEvent.EmojiDelete,
@@ -931,7 +931,7 @@ function handleEvents(client, parser){
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
-                if(addonInfo.verified === true && addonInfo.allowed === true){
+                if(addonInfo.verified === true && addonInfo.allowed === true && addonInfo.addon.ready === true){
                     _channel.guild.fetchAuditLogs({
                         limit: 1,
                         type: AuditLogEvent.ChannelCreate,
@@ -975,7 +975,7 @@ function handleEvents(client, parser){
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
-                if(addonInfo.verified === true && addonInfo.allowed === true){
+                if(addonInfo.verified === true && addonInfo.allowed === true && addonInfo.addon.ready === true){
                     _newChannel.guild.fetchAuditLogs({
                         limit: 1,
                         type: AuditLogEvent.ChannelUpdate,
@@ -1028,7 +1028,7 @@ function handleEvents(client, parser){
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
-                if(addonInfo.verified === true && addonInfo.allowed === true){
+                if(addonInfo.verified === true && addonInfo.allowed === true && addonInfo.addon.ready === true){
                     addonInfo.addon.channels.delete(_channel.id);
                     if(validatePermission(getAddonPermission(addonInfo.addon.name), scopes.bitfield.MESSAGES)){
                         const addonMessageManager = MessageManager.get(addonInfo.addon.name) || structureHandler.createStructure('Save');
@@ -1072,7 +1072,7 @@ function handleEvents(client, parser){
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
-                if(addonInfo.verified === true && addonInfo.allowed === true){
+                if(addonInfo.verified === true && addonInfo.allowed === true && addonInfo.addon.ready === true){
                     _role.guild.fetchAuditLogs({
                         limit: 1,
                         type: AuditLogEvent.RoleCreate,
@@ -1106,7 +1106,7 @@ function handleEvents(client, parser){
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
-                if(addonInfo.verified === true && addonInfo.allowed === true){
+                if(addonInfo.verified === true && addonInfo.allowed === true && addonInfo.addon.ready === true){
                     _newRole.guild.fetchAuditLogs({
                         limit: 1,
                         type: AuditLogEvent.RoleUpdate,
@@ -1145,7 +1145,7 @@ function handleEvents(client, parser){
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
-                if(addonInfo.verified === true && addonInfo.allowed === true){
+                if(addonInfo.verified === true && addonInfo.allowed === true && addonInfo.addon.ready === true){
                     _role.guild.fetchAuditLogs({
                         limit: 1,
                         type: AuditLogEvent.RoleDelete,
@@ -1185,7 +1185,7 @@ function handleEvents(client, parser){
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
-                if(addonInfo.verified === true && addonInfo.allowed === true){
+                if(addonInfo.verified === true && addonInfo.allowed === true && addonInfo.addon.ready === true){
                     let buttonInteraction = structureHandler.createStructure('ButtonInteraction', [interaction, addonInfo.addon]);
                     const addonInteractionCollectors = interactionCollectors.get(addonInfo.addon.name);
                     if(addonInteractionCollectors){
@@ -1234,7 +1234,7 @@ function handleEvents(client, parser){
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
-                if(addonInfo.verified === true && addonInfo.allowed === true){
+                if(addonInfo.verified === true && addonInfo.allowed === true && addonInfo.addon.ready === true){
                     let menuInteraction = structureHandler.createStructure('MenuInteraction', [interaction, addonInfo.addon]);
                     const addonInteractionCollectors = interactionCollectors.get(addonInfo.addon.name);
                     if(addonInteractionCollectors){
@@ -1283,7 +1283,7 @@ function handleEvents(client, parser){
             _addons = addons.toReadableArray();
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
-                if(addonInfo.verified === true && addonInfo.allowed === true){
+                if(addonInfo.verified === true && addonInfo.allowed === true && addonInfo.addon.ready === true){
                     let modalInteraction = structureHandler.createStructure('FormInteraction', [interaction, addonInfo.addon]);
                     emitEvent(addonInfo.addon.name, 'formSubmit', scopes.bitfield.INTERACTIONS, modalInteraction);
 
