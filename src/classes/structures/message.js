@@ -3,6 +3,7 @@ const { getMessageContent } = require('../../utils/messageFunctions.js');
 const scopes = require('../../bitfields/scopes.js');
 const Save = require('../save.js');
 const MemberManager = require('../managers/memberManager.js');
+const GuildManager = require('../managers/guildManager.js');
 const UserManager = require('../managers/userManager.js');
 const channelManager = require('../managers/channelManager.js');
 const Emoji = require('./emoji.js');
@@ -28,7 +29,8 @@ class Message{
             const addonMemberManager = MemberManager.get(addon.name) || new Save();
             const memberManager = addonMemberManager.get((data.author || data.member).id) || new Save();
             this.author = memberManager.get(data.guild.id);
-    		this.guild = typeof this.author !== 'undefined' ? this.author.guild : null;
+            const addonGuildManager = GuildManager.get(addon.name) || new Save();
+    		this.guild = addonGuildManager.get(data.guild.id) ?? (typeof this.author !== 'undefined' ? this.author.guild : null);
         } else {
         	const addonUserManager = UserManager.get(addon.name) || new Save();
             this.author = addonUserManager.get((data.author || data.member).id);
