@@ -10,72 +10,86 @@ const roleManager = require('../managers/roleManager.js');
 const emojiManager = require('../managers/emojiManager.js');
 const MessageManager = require('../managers/messageManager.js');
 const { getAddonPermission, validatePermission, passClient, wait } = require('../../utils/functions.js');
-const { eventListeners, addons, emojiCollectors, interactionCollectors, builtStructures } = require('../../utils/saves.js');
+const { eventListeners, addons, emojiCollectors, interactionCollectors, builtStructures, structureStatus, structureListener } = require('../../utils/saves.js');
 const scopes = require('../../bitfields/scopes.js');
 const { ChannelType, AuditLogEvent } = require('discord.js');
 
-function createStructures(client, _addons){
+async function specificStructureCreation(guild, addonInfo, callback){
+    if(!Array.isArray(builtStructures[addonInfo.addon.name])) builtStructures[addonInfo.addon.name] = [];
+	if(builtStructures[addonInfo.addon.name].indexOf(guild.id) >= 0) return;
+    if(addonInfo.verified === true && addonInfo.allowed === true){
+        builtStructures[addonInfo.addon.name].push(guild.id);
+        let g = structureHandler.createStructure('Guild', [guild, addonInfo.addon]);
+        const channels = Array.from(guild.channels.cache.values());
+        for(let _i = 0; _i < channels.length; _i++){
+            let channel = channels[_i];
+            if(!channel) continue;
+            if(channel.type === ChannelType.GuildText || channel.type === ChannelType.GuildAnnouncement){
+                structureHandler.createStructure('TextChannel', [channel, addonInfo.addon, g]);
+            } else if(channel.type === ChannelType.GuildCategory){
+                structureHandler.createStructure('CategoryChannel', [channel, addonInfo.addon, g]);
+            } else if(channel.type === ChannelType.GuildVoice){
+                structureHandler.createStructure('VoiceChannel', [channel, addonInfo.addon, g]);
+            } else if(channel.type === ChannelType.GuildStageVoice){
+                structureHandler.createStructure('StageChannel', [channel, addonInfo.addon, g]);
+            } else if(channel.type === ChannelType.GuildForum){
+                structureHandler.createStructure('ForumChannel', [channel, addonInfo.addon, g]);
+            } else if(channel.type === ChannelType.GuildDirectory){
+                structureHandler.createStructure('DirectoryChannel', [channel, addonInfo.addon, g]);
+            }
+            if(_i % 3 === 0) await wait(1e2);
+        }
+        const guildRoles = Array.from(guild.roles.cache.values());
+        for(let _i = 0; _i < guildRoles.length; _i++){
+            var guildRole = guildRoles[_i];
+            if(!guildRole) continue;
+            structureHandler.createStructure('Role', [guildRole, addonInfo.addon, g]);
+            if(_i % 3 === 0) await wait(1e2);
+        }
+        const guildEmojis = Array.from(guild.emojis.cache.values());
+        for(let _i = 0; _i < guildEmojis.length; _i++){
+            var guildEmoji = guildEmojis[_i];
+            if(!guildEmoji) continue;
+            structureHandler.createStructure('Emoji', [guildEmoji, addonInfo.addon, g]);
+            if(_i % 3 === 0) await wait(2e1);
+        }
+        const members = Array.from(guild.members.cache.values());
+        for(let _i = 0; _i < members.length; _i++){
+            var _member = members[_i];
+            if(!_member) continue;
+            structureHandler.createStructure('Member', [_member, addonInfo.addon]);
+            structureHandler.createStructure('VoiceState', [_member.voice, addonInfo.addon]);
+            if(_i % 3 === 0) await wait(2e1);
+        }
+    }
+    callback();
+}
+
+function createStructures(client){
     return new Promise(async resolve => {
+        structureStatus['building'] = true;
         const readableAddons = addons.toReadableArray();
         const guilds = Object.values(client.mainguilds);
         for(var i = 0; i < guilds.length; i++){
             var guild = guilds[i];
-            for(var z = 0; z < readableAddons.length; z++){
-                var addonInfo = readableAddons[z].value;
-                if(!Array.isArray(builtStructures[addonInfo.addon.name])) builtStructures[addonInfo.addon.name] = [];
-                if(builtStructures[addonInfo.addon.name].indexOf(guild.id) >= 0) continue;
-                if(addonInfo.verified === true && addonInfo.allowed === true){
-                    builtStructures[addonInfo.addon.name].push(guild.id);
-                    let g = structureHandler.createStructure('Guild', [guild, addonInfo.addon]);
-                    await wait(1e1);
-                    const channels = Array.from(guild.channels.cache.values());
-                    await wait(1e3);
-                    for(let _i = 0; _i < channels.length; _i++){
-                        let channel = channels[_i];
-                        if(!channel) continue;
-                        if(channel.type === ChannelType.GuildText || channel.type === ChannelType.GuildAnnouncement){
-                            structureHandler.createStructure('TextChannel', [channel, addonInfo.addon, g]);
-                        } else if(channel.type === ChannelType.GuildCategory){
-                            structureHandler.createStructure('CategoryChannel', [channel, addonInfo.addon, g]);
-                        } else if(channel.type === ChannelType.GuildVoice){
-                            structureHandler.createStructure('VoiceChannel', [channel, addonInfo.addon, g]);
-                        } else if(channel.type === ChannelType.GuildStageVoice){
-                            structureHandler.createStructure('StageChannel', [channel, addonInfo.addon, g]);
-                        } else if(channel.type === ChannelType.GuildForum){
-                            structureHandler.createStructure('ForumChannel', [channel, addonInfo.addon, g]);
-                        } else if(channel.type === ChannelType.GuildDirectory){
-                            structureHandler.createStructure('DirectoryChannel', [channel, addonInfo.addon, g]);
+            let addonIndex = 0;
+            if(readableAddons.length <= addonIndex) continue;
+            await new Promise(async (nextG) => {
+                async function createNewCallback(){
+                    await specificStructureCreation(guild, readableAddons[addonIndex].value, async function(){
+                        ++addonIndex;
+                        if(addonIndex + 1 > readableAddons.length){
+                            nextG();
+                        } else {
+							await createNewCallback();
                         }
-                        if(_i % 3 === 0) await wait(1e2);
-                    }
-                    await wait(1e3);
-                    const guildRoles = Array.from(guild.roles.cache.values());
-                    for(let _i = 0; _i < guildRoles.length; _i++){
-                        var guildRole = guildRoles[_i];
-                        if(!guildRole) continue;
-                        structureHandler.createStructure('Role', [guildRole, addonInfo.addon, g]);
-                      	if(_i % 3 === 0) await wait(1e2);
-                    }
-                    await wait(1e3);
-                    const guildEmojis = Array.from(guild.emojis.cache.values());
-                    for(let _i = 0; _i < guildEmojis.length; _i++){
-                        var guildEmoji = guildEmojis[_i];
-                        if(!guildEmoji) continue;
-                        structureHandler.createStructure('Emoji', [guildEmoji, addonInfo.addon, g]);
-                        if(_i % 3 === 0) await wait(2e1);
-                    }
-                    await wait(1e3);
-                    const members = Array.from(guild.members.cache.values());
-                    for(let _i = 0; _i < members.length; _i++){
-                        var _member = members[_i];
-                        if(!_member) continue;
-                        structureHandler.createStructure('Member', [_member, addonInfo.addon]);
-                        structureHandler.createStructure('VoiceState', [_member.voice, addonInfo.addon]);
-                        if(_i % 3 === 0) await wait(2e1);
-                    }
+                    });
                 }
-            }
+                await createNewCallback();
+            });
         }
+        structureStatus['building'] = false;
+        structureListener.emit('created');
         resolve();
     });
 }
