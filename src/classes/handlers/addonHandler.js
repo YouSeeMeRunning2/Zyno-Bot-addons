@@ -6,7 +6,7 @@ const { generateId } = require('../../utils/functions.js');
 const { getClientParser } = require('../../utils/parser.js');
 const { createStructures } = require('./eventHandler.js');
 const structureHandler = require('./structureHandler.js');
-const { addons, addonCreate, commandListeners, eventListeners, builtStructures } = require('../../utils/saves.js');
+const { addons, addonCreate, commandListeners, eventListeners, builtStructures, structureStatus, structureListener } = require('../../utils/saves.js');
 const EventEmitter = require('events');
 const fs = require('fs/promises');
 const { existsSync } = require('fs');
@@ -350,6 +350,23 @@ class InteractionHandler extends EventEmitter{
 var interactionHandler = new InteractionHandler(commandRegistrant);
 clientParser.parseInteractionHandler(interactionHandler);
 
+function createStructureListener(addon, client){
+    return new Promise(async resolve => {
+        if(structureStatus['building'] === true){
+            structureListener.once('created', () => {
+                if(Array.isArray(builtStructures[addon.name])){
+                    resolve();
+                } else {
+                    createStructureListener(addon);
+                }
+            });
+        } else {
+            await createStructures(client);
+            resolve();
+        }
+    })
+}
+
 function registerAddon(addon){
     return new Promise(async (resolve) => {
         if(registeredAddons.size === 0){
@@ -381,11 +398,11 @@ function registerAddon(addon){
                     });
                     addonCreate.emit(addon.name, true);
                     if(clientParser.ready === true){
-                        await createStructures(clientParser.getClient(), addons.toReadableArray());
+                        await createStructureListener(addon, clientParser.getClient());
                         resolve(true);
                     } else {
                         clientParser.once('ready', async () => {
-                            await createStructures(clientParser.getClient(), addons.toReadableArray());
+                        	await createStructureListener(addon, clientParser.getClient());
                             resolve(true);
                         });
                     }
@@ -421,7 +438,7 @@ function registerAddon(addon){
                     stopping: false,
                     starting: false
                 });
-                await createStructures(clientParser.getClient(), addons.toReadableArray());
+                await createStructureListener(addon, clientParser.getClient());
                 addonCreate.emit(addon.name, true);
                 resolve(true);
             }
