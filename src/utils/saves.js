@@ -9,6 +9,10 @@ const addons = new ValueSaver();
 const emojiCollectors = new ValueSaver();
 const interactionCollectors = new ValueSaver();
 const builtStructures = {};
+let structureStatus = {
+    building: false
+};
+const structureListener = new EventEmitter();
 
 module.exports = {
     addons,
@@ -18,5 +22,7 @@ module.exports = {
     botClasses,
     emojiCollectors,
     interactionCollectors,
-    builtStructures
+    builtStructures,
+    structureStatus,
+    structureListener
 };
