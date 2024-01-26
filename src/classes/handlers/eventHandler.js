@@ -956,6 +956,9 @@ function handleEvents(client, parser){
                         
                         if(log.targetId !== _channel.id) return;
 
+                        const addonGuildManager = GuildManager.get(addonInfo.addon.name) || structureHandler.createStructure('Save');
+                        let guild = addonGuildManager.get(_channel.guild.id) || structureHandler.createStructure('Guild', [_channel.guild, addonInfo.addon]);
+
                         let channel;
                         if(_channel.type === ChannelType.GuildText || _channel.type === ChannelType.GuildAnnouncement){
                             channel = structureHandler.createStructure('TextChannel', [_channel, addonInfo.addon, guild]);
