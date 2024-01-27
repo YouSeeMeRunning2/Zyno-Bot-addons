@@ -9,6 +9,7 @@ const channelManager = require('../managers/channelManager.js');
 const Emoji = require('./emoji.js');
 const EmojiCollector = require('./collectors/emojiCollector.js');
 const InteractionCollector = require('./collectors/interactionCollector.js');
+const { ChannelType } = require('discord.js');
 
 const validAutoArchiveDates = [60, 1440, 10080, 4320];
 
@@ -22,20 +23,20 @@ class Message{
         if(!data.channel){
             data.channel = client.channels.cache.get(data.channelId);
         }
-        if(!data.guild){
-            data.guild = client.guilds.cache.get(data.guildId);
-        }
         if(!data.channel.isDMBased()){
+            if(!data.guild){
+                data.guild = client.guilds.cache.get(data.guildId);
+            }
             const addonMemberManager = MemberManager.get(addon.name) || new Save();
             const memberManager = addonMemberManager.get((data.author || data.member).id) || new Save();
             this.author = memberManager.get(data.guild.id);
-            const addonGuildManager = GuildManager.get(addon.name) || new Save();
-    		this.guild = addonGuildManager.get(data.guild.id) ?? (typeof this.author !== 'undefined' ? this.author.guild : null);
+            this.guildId = data.guild.id;
         } else {
         	const addonUserManager = UserManager.get(addon.name) || new Save();
             this.author = addonUserManager.get((data.author || data.member).id);
-            this.guild = this.author;
+            this.guildId = data.author.id;
         }
+        this.addon = addon;
         this.isMe = typeof this.author !== 'undefined' ? this.author.id === data.client.user.id : false;
         this.created = new Date(data.createdTimestamp);
         this.createdTimestamp = data.createdTimestamp;
@@ -45,12 +46,14 @@ class Message{
         this.id = data.id;
         this.attachments = new Save(data.attachments);
         this.url = data.url;
-        const addonChannelManager = channelManager.get(addon.name) || new Save();
-        const guildChannelManager = addonChannelManager.get(data.channel.isDMBased() ? undefined : data.guild.id) || new Save();
-        this.channel = data.channel.isDMBased() ? structureHandler.createStructure('DMChannel', [data.channel, addon]) : (guildChannelManager.get(data.channel.id) ?? null);
+        this.channelId = data.channel.id ?? (data.member ?? data.author).id;
         this.deletable = data.deletable;
         this.mentions = structureHandler.createStructure('Mentions', [data, addon, this.guild]);
         this.content = data.content || '';
+        this.dm = data.channel.isDMBased();
+        this.isDM = function(){
+            return this.dm;
+        }
         this.delete = function(){
             return new Promise((resolve, reject) => {
                 if(!validatePermission(getAddonPermission(addon.name), scopes.bitfield.MESSAGES)) return reject(`Missing members scope in bitfield`);
@@ -146,6 +149,22 @@ class Message{
             const collector = new InteractionCollector(options, this, addon);
             return collector;
         };
+    }
+    get guild(){
+        if(this.dm) return this.author;
+        const addonGuildManager = GuildManager.get(this.addon.name) || new Save();
+        return addonGuildManager.get(this.guildId);
+    }
+    get channel(){
+        if(this.dm){
+            const correspondingDMChannel = client.channels.cache.filter(ch => ch.type === ChannelType.DM).filter(ch => ch.recipientId === this.author.id).first();
+            if(!correspondingDMChannel) return null;
+            return structureHandler.createStructure('DMChannel', [correspondingDMChannel, this.addon]);
+        } else {
+            const addonChannelManager = channelManager.get(this.addon.name) || new Save();
+            const guildChannelManager = addonChannelManager.get(this.guildId) || new Save();
+            return guildChannelManager.get(this.channelId) ?? null;
+        }
     }
 }
 
