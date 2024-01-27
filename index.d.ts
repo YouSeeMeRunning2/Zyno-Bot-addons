@@ -1868,8 +1868,10 @@ declare class Member extends User{
 }
 
 declare class Message{
+    addon: Addon;
     isMe: boolean;
     guild: User | Guild;
+    guildId: string;
     author: Member | User;
     created: Date;
     createdTimestamp: number;
@@ -1880,9 +1882,16 @@ declare class Message{
     attachments: Save<string, Attachment>;
     url: string;
     channel: ChannelType;
+    channelId: string;
     deletable: boolean;
     mentions: Mentions;
     content: string;
+    dm: boolean;
+
+    /**
+     * Defines whether the message is a DM message or was sent in a Discord server.
+     */
+    isDM() : boolean;
     /**
      * Deletes the message
      */
