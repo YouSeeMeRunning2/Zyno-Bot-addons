@@ -1898,6 +1898,12 @@ declare class Message{
     delete() : Promise<void>;
 
     /**
+     * Reply to the message
+     * @param content The content of the reply
+     */
+    reply(...content: [MessageContentType]) : Promise<Message>;
+
+    /**
      * Edit the current message
      * @param content The content of the new message
      */
