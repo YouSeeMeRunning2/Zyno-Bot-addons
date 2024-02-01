@@ -54,6 +54,13 @@ class Message{
         this.isDM = function(){
             return this.dm;
         }
+        this.reply = function(...content){
+            return new Promise((resolve, reject) => {
+                if(content.length === 0) return reject(`At least one argument must be given`);
+                let _content = getMessageContent(content);
+                data.reply(_content).then(msg => resolve(structureHandler.createStructure('Message', [msg, addon]))).catch(reject);
+            });
+        }
         this.delete = function(){
             return new Promise((resolve, reject) => {
                 if(!validatePermission(getAddonPermission(addon.name), scopes.bitfield.MESSAGES)) return reject(`Missing members scope in bitfield`);
