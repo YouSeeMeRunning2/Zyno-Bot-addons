@@ -1842,7 +1842,7 @@ declare class Member extends User{
      * @param role An array of the role id's or Role classes or a single Role class or single role id of the role(s) which should be removed from the member
      * @param reason The reason to give the roles
      */
-    removeRoles(role: [Role | string] | Role | string, reason?: string) : Promise<Member>;
+    removeRole(role: [Role | string] | Role | string, reason?: string) : Promise<Member>;
 
     /**
      * Overwrite all the roles with other roles the user should get
