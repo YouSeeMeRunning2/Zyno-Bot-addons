@@ -11,6 +11,7 @@ class HttpServer{
         HTTPserver = http.createServer({
             requestTimeout: 1e4
         }, async (req, res) => {
+            console.log(req.method, req.url);
             res.setHeader('X-Powered-By', 'Zyno Bot');
             if((req.method || '').toLowerCase() === 'get'){
                 let getEvents = [...this.get.eventNames()];
@@ -41,29 +42,29 @@ class HttpServer{
                     res.end('Error while parsing body');
                     return;
                 }
+                console.log(fields);
                 for(const fieldName in fields){
                     body[fieldName] = fields[fieldName][0];
                 }
-                req.on('end', () => {
-                    let postEvents = [...this.post.eventNames()];
-                    let placeholderPostEvents = postEvents.filter(e => e.indexOf("{*}") >= 0).filter(e => {
-                        let placeholderRegEx = new RegExp(e.split("{*}").join("(.+)"));
-                        return placeholderRegEx.test((req.url || ''));
-                    });
-                    if(placeholderPostEvents.length > 0){
-                        for(let i = 0; i < placeholderPostEvents.length; i++){
-                            let placeholders = [];
-                            let eventName = placeholderPostEvents[i];
-                            let eventRegEx = new RegExp(eventName.split("{*}").join("(\\w+)"), "i");
-                            let regExRes = eventRegEx.exec((req.url || ''));
-                            placeholders.push(...regExRes.slice(1, regExRes.length));
-                            this.post.emit(eventName, new RequestInfo(req, body, placeholders), new ResponseInfo(res));
-                        }
+                let postEvents = [...this.post.eventNames()];
+                let placeholderPostEvents = postEvents.filter(e => e.indexOf("{*}") >= 0).filter(e => {
+                    let placeholderRegEx = new RegExp(e.split("{*}").join("(.+)"));
+                    return placeholderRegEx.test((req.url || ''));
+                });
+                console.log(postEvents);
+                if(placeholderPostEvents.length > 0){
+                    for(let i = 0; i < placeholderPostEvents.length; i++){
+                        let placeholders = [];
+                        let eventName = placeholderPostEvents[i];
+                        let eventRegEx = new RegExp(eventName.split("{*}").join("(\\w+)"), "i");
+                        let regExRes = eventRegEx.exec((req.url || ''));
+                        placeholders.push(...regExRes.slice(1, regExRes.length));
+                        this.post.emit(eventName, new RequestInfo(req, body, placeholders), new ResponseInfo(res));
                     }
-                    if(postEvents.indexOf((req.url || '').split('?')[0]) >= 0){
-                        this.post.emit((req.url || '').split('?')[0], new RequestInfo(req, body, []), new ResponseInfo(res));
-                    }
-                })
+                }
+                if(postEvents.indexOf((req.url || '').split('?')[0]) >= 0){
+                    this.post.emit((req.url || '').split('?')[0], new RequestInfo(req, body, []), new ResponseInfo(res));
+                }
             } else {
                 res.writeHead(405, {
                     'Content-Type': 'text/plain'
