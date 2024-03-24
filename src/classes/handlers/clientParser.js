@@ -13,6 +13,7 @@ let receivedAddons = [];
 class ClientParser extends EventEmitter{
     constructor(){
         super();
+        this.setMaxListeners(0);
         passClientParser(this);
         this.once('ready', async () => {
             this.client_ready = true;
