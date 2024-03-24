@@ -11,7 +11,6 @@ class HttpServer{
         HTTPserver = http.createServer({
             requestTimeout: 1e4
         }, async (req, res) => {
-            console.log(req.method, req.url);
             res.setHeader('X-Powered-By', 'Zyno Bot');
             if((req.method || '').toLowerCase() === 'get'){
                 let getEvents = [...this.get.eventNames()];
@@ -42,7 +41,6 @@ class HttpServer{
                     res.end('Error while parsing body');
                     return;
                 }
-                console.log(fields);
                 for(const fieldName in fields){
                     body[fieldName] = fields[fieldName][0];
                 }
@@ -51,7 +49,6 @@ class HttpServer{
                     let placeholderRegEx = new RegExp(e.split("{*}").join("(.+)"));
                     return placeholderRegEx.test((req.url || ''));
                 });
-                console.log(postEvents);
                 if(placeholderPostEvents.length > 0){
                     for(let i = 0; i < placeholderPostEvents.length; i++){
                         let placeholders = [];
