@@ -34,8 +34,8 @@ class Member extends User{
         const guildRoles = Array.from(guildMember.roles.cache.keys());
         this._roles = guildRoles;
         this.nickname = guildMember.nickname;
-        this.displayName = this.nickname || this.username;
-		this.permissions = guildMember.permissions;
+        this.displayName = guildMember.displayName;
+	this.permissions = guildMember.permissions;
         this.color = {
             hex: guildMember.displayHexColor,
             base: guildMember.displayColor
