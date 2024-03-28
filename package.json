@@ -17,7 +17,7 @@
     "formidable": "^3.5.1",
     "valuesaver": "^1.9.3",
     "ws": "^8.14.2",
-    "yt-stream": "^1.4.10"
+    "yt-stream": "^1.4.13"
   },
   "readme": "readme.MD",
   "repository": {
