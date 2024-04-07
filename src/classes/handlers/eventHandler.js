@@ -9,6 +9,7 @@ const userManager = require('../managers/userManager.js');
 const roleManager = require('../managers/roleManager.js');
 const emojiManager = require('../managers/emojiManager.js');
 const MessageManager = require('../managers/messageManager.js');
+const Save = require('../save.js');
 const { getAddonPermission, validatePermission, passClient, wait } = require('../../utils/functions.js');
 const { eventListeners, addons, emojiCollectors, interactionCollectors, builtStructures, structureStatus, structureListener } = require('../../utils/saves.js');
 const scopes = require('../../bitfields/scopes.js');
@@ -985,7 +986,7 @@ function handleEvents(client, parser){
             }
         });
 
-        client.on('channelUpdate', async (_oldChannel, _newChannel) => {
+        parser.on('channelUpdate', async (_oldChannel, _newChannel, log) => {
             if(!_oldChannel || !_newChannel) return;
             if(client.config.guilds.indexOf(_newChannel.guild.id) < 0) return;
             await wait(400);
@@ -993,47 +994,37 @@ function handleEvents(client, parser){
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
                 if(addonInfo.verified === true && addonInfo.allowed === true && addonInfo.addon.ready === true){
-                    _newChannel.guild.fetchAuditLogs({
-                        limit: 1,
-                        type: AuditLogEvent.ChannelUpdate,
-                    }).then(logs => {
-                        const log = logs.entries.first();
 
-                        if(!log) return;
-                        
-                        if(log.targetId !== _newChannel.id) return;
+                    const addonGuildManager = GuildManager.get(addonInfo.addon.name) || structureHandler.createStructure('Save');
+                    let guild = addonGuildManager.get(_newChannel.guild.id) ?? structureHandler.createStructure('Guild', [_newChannel.guild, addonInfo.addon]);
 
-                        const addonGuildManager = GuildManager.get(addonInfo.addon.name) || structureHandler.createStructure('Save');
-                        let guild = addonGuildManager.get(_newChannel.guild.id) ?? structureHandler.createStructure('Guild', [_newChannel.guild, addonInfo.addon]);
+                    const addonChannelManager = channelManager.get(addonInfo.addon.name) ?? structureHandler.createStructure('Save');
+                    const guildChannelManager = addonChannelManager.get(_oldChannel.guild.id) ?? structureHandler.createStructure('Save');
+                    let oldChannel = guildChannelManager.get(_oldChannel.id);
+                    
+                    let newChannel;
+                    if(_newChannel.type === ChannelType.GuildText || _newChannel.type === ChannelType.GuildAnnouncement){
+                        newChannel = structureHandler.createStructure('TextChannel', [_newChannel, addonInfo.addon, guild]);
+                    } else if(_newChannel.type === ChannelType.GuildCategory){
+                        newChannel = structureHandler.createStructure('CategoryChannel', [_newChannel, addonInfo.addon, guild]);
+                    } else if(_newChannel.type === ChannelType.GuildVoice){
+                        newChannel = structureHandler.createStructure('VoiceChannel', [_newChannel, addonInfo.addon, guild]);
+                    } else if(_newChannel.type === ChannelType.GuildStageVoice){
+                        newChannel = structureHandler.createStructure('StageChannel', [_newChannel, addonInfo.addon, guild]);
+                    } else if(_newChannel.type === ChannelType.GuildForum){
+                        newChannel = structureHandler.createStructure('ForumChannel', [_newChannel, addonInfo.addon, guild]);
+                    } else if(_newChannel.type === ChannelType.GuildDirectory){
+                        newChannel = structureHandler.createStructure('DirectoryChannel', [_newChannel, addonInfo.addon, guild]);
+                    }
 
-                        const addonChannelManager = channelManager.get(addonInfo.addon.name) ?? structureHandler.createStructure('Save');
-                        const guildChannelManager = addonChannelManager.get(_oldChannel.guild.id) ?? structureHandler.createStructure('Save');
-                        let oldChannel = guildChannelManager.get(_oldChannel.id);
-                        
-                        let newChannel;
-                        if(_newChannel.type === ChannelType.GuildText || _newChannel.type === ChannelType.GuildAnnouncement){
-                            newChannel = structureHandler.createStructure('TextChannel', [_newChannel, addonInfo.addon, guild]);
-                        } else if(_newChannel.type === ChannelType.GuildCategory){
-                            newChannel = structureHandler.createStructure('CategoryChannel', [_newChannel, addonInfo.addon, guild]);
-                        } else if(_newChannel.type === ChannelType.GuildVoice){
-                            newChannel = structureHandler.createStructure('VoiceChannel', [_newChannel, addonInfo.addon, guild]);
-                        } else if(_newChannel.type === ChannelType.GuildStageVoice){
-                            newChannel = structureHandler.createStructure('StageChannel', [_newChannel, addonInfo.addon, guild]);
-                        } else if(_newChannel.type === ChannelType.GuildForum){
-                            newChannel = structureHandler.createStructure('ForumChannel', [_newChannel, addonInfo.addon, guild]);
-                        } else if(_newChannel.type === ChannelType.GuildDirectory){
-                            newChannel = structureHandler.createStructure('DirectoryChannel', [_newChannel, addonInfo.addon, guild]);
-                        }
+                    let entry = structureHandler.createStructure('BaseEntry', [log, undefined, guild, addonInfo.addon]);
 
-                        let entry = structureHandler.createStructure('BaseEntry', [log, undefined, guild, addonInfo.addon]);
+                    emitEvent(addonInfo.addon.name, 'channelUpdate', scopes.bitfield.CHANNELS, oldChannel, newChannel, entry);
 
-                        emitEvent(addonInfo.addon.name, 'channelUpdate', scopes.bitfield.CHANNELS, oldChannel, newChannel, entry);
-
-                        oldChannel = null;
-                        newChannel = null;
-                        entry = null;
-                        guild = null;
-                    }).catch(err => {});
+                    oldChannel = null;
+                    newChannel = null;
+                    entry = null;
+                    guild = null;
                 }
             }
         });
@@ -1082,7 +1073,7 @@ function handleEvents(client, parser){
             }
         });
 
-        client.on('roleCreate', async (_role) => {
+        parser.on('roleCreate', async (_role, log) => {
             if(!_role) return;
             if(client.config.guilds.indexOf(_role.guild.id) < 0) return;
             await wait(400);
@@ -1090,33 +1081,22 @@ function handleEvents(client, parser){
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
                 if(addonInfo.verified === true && addonInfo.allowed === true && addonInfo.addon.ready === true){
-                    _role.guild.fetchAuditLogs({
-                        limit: 1,
-                        type: AuditLogEvent.RoleCreate,
-                    }).then(logs => {
-                        const log = logs.entries.first();
+                    const addonGuildManager = GuildManager.get(addonInfo.addon.name) || structureHandler.createStructure('Save');
+                    let guild = addonGuildManager.get(_role.guild.id) ?? structureHandler.createStructure('Guild', [_role.guild, addonInfo.addon]);
+                    let role = structureHandler.createStructure('Role', [_role, addonInfo.addon, guild]);
 
-                        if(!log) return;
-                        
-                        if(log.targetId !== _role.id) return;
-                        
-                        const addonGuildManager = GuildManager.get(addonInfo.addon.name) || structureHandler.createStructure('Save');
-                        let guild = addonGuildManager.get(_role.guild.id) ?? structureHandler.createStructure('Guild', [_role.guild, addonInfo.addon]);
-                        let role = structureHandler.createStructure('Role', [_role, addonInfo.addon, guild]);
+                    let entry = structureHandler.createStructure('BaseEntry', [log, undefined, guild, addonInfo.addon]);
 
-                        let entry = structureHandler.createStructure('BaseEntry', [log, undefined, guild, addonInfo.addon]);
+                    emitEvent(addonInfo.addon.name, 'roleAdd', scopes.bitfield.ROLES, role, entry);
 
-                        emitEvent(addonInfo.addon.name, 'roleAdd', scopes.bitfield.ROLES, role, entry);
-
-                        guild = null;
-                        role = null;
-                        entry = null;
-                    }).catch(err => {});
+                    guild = null;
+                    role = null;
+                    entry = null;
                 }
             }
         });
 
-        client.on('roleUpdate', async (_oldRole, _newRole) => {
+        parser.on('roleUpdate', async (_oldRole, _newRole, log) => {
             if(!_oldRole || !_newRole) return;
             if(client.config.guilds.indexOf(_newRole.guild.id) < 0) return;
             await wait(400);
@@ -1124,38 +1104,27 @@ function handleEvents(client, parser){
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
                 if(addonInfo.verified === true && addonInfo.allowed === true && addonInfo.addon.ready === true){
-                    _newRole.guild.fetchAuditLogs({
-                        limit: 1,
-                        type: AuditLogEvent.RoleUpdate,
-                    }).then(logs => {
-                        const log = logs.entries.first();
+                    const addonGuildManager = GuildManager.get(addonInfo.addon.name) || structureHandler.createStructure('Save');
+                    let guild = addonGuildManager.get(_newRole.guild.id) ?? structureHandler.createStructure('Guild', [_newRole.guild, addonInfo.addon]);
+                    
+                    const addonRoleManager = roleManager.get(addonInfo.addon.name) ?? structureHandler.createStructure('Save');
+                    const guildRoleManager = addonRoleManager.get(_oldRole.guild.id) ?? structureHandler.createStructure('Save');
+                    let oldRole = guildRoleManager.get(_oldRole.id) ?? structureHandler.createStructure('Role', [_oldRole, addonInfo.addon, guild]);
+                    let role = structureHandler.createStructure('Role', [_newRole, addonInfo.addon, guild]);
 
-                        if(!log) return;
-                        
-                        if(log.targetId !== _newRole.id) return;
+                    let entry = structureHandler.createStructure('BaseEntry', [log, undefined, guild, addonInfo.addon]);
 
-                        const addonGuildManager = GuildManager.get(addonInfo.addon.name) || structureHandler.createStructure('Save');
-                        let guild = addonGuildManager.get(_newRole.guild.id) ?? structureHandler.createStructure('Guild', [_newRole.guild, addonInfo.addon]);
-                        
-                        const addonRoleManager = roleManager.get(addonInfo.addon.name) ?? structureHandler.createStructure('Save');
-                        const guildRoleManager = addonRoleManager.get(_oldRole.guild.id) ?? structureHandler.createStructure('Save');
-                        let oldRole = guildRoleManager.get(_oldRole.id) ?? structureHandler.createStructure('Role', [_oldRole, addonInfo.addon, guild]);
-                        let role = structureHandler.createStructure('Role', [_newRole, addonInfo.addon, guild]);
+                    emitEvent(addonInfo.addon.name, 'roleUpdate', scopes.bitfield.ROLES, oldRole, role, entry);
 
-                        let entry = structureHandler.createStructure('BaseEntry', [log, undefined, guild, addonInfo.addon]);
-
-                        emitEvent(addonInfo.addon.name, 'roleUpdate', scopes.bitfield.ROLES, oldRole, role, entry);
-
-                        guild = null;
-                        oldRole = null;
-                        role = null;
-                        entry = null;
-                    }).catch(err => {});
+                    guild = null;
+                    oldRole = null;
+                    role = null;
+                    entry = null;
                 }
             }
         });
 
-        client.on('roleDelete', async (_role) => {
+        parser.on('roleDelete', async (_role, log) => {
             if(!_role) return;
             if(client.config.guilds.indexOf(_role.guild.id) < 0) return;
             await wait(400);
@@ -1163,34 +1132,23 @@ function handleEvents(client, parser){
             for(var z = 0; z < _addons.length; z++){
                 let addonInfo = _addons[z].value;
                 if(addonInfo.verified === true && addonInfo.allowed === true && addonInfo.addon.ready === true){
-                    _role.guild.fetchAuditLogs({
-                        limit: 1,
-                        type: AuditLogEvent.RoleDelete,
-                    }).then(logs => {
-                        const log = logs.entries.first();
+                    const addonGuildManager = GuildManager.get(addonInfo.addon.name) || structureHandler.createStructure('Save');
+                    let guild = addonGuildManager.get(_role.guild.id) ?? structureHandler.createStructure('Guild', [_role.guild, addonInfo.addon]);
+                    
+                    const addonRoleManager = roleManager.get(addonInfo.addon.name) ?? structureHandler.createStructure('Save');
+                    const guildRoleManager = addonRoleManager.get(_role.guild.id) ?? structureHandler.createStructure('Save');
+                    let oldRole = guildRoleManager.get(_role.id) ?? structureHandler.createStructure('Role', [_role, addonInfo.addon, guild]);
+                    guildRoleManager.delete(_role.id);
+                    addonGuildManager.set(_role.guild.id, guildRoleManager);
+                    roleManager.set(addonInfo.addon.name, addonGuildManager);
 
-                        if(!log) return;
-                        
-                        if(log.targetId !== _role.id) return;
+                    let entry = structureHandler.createStructure('BaseEntry', [log, undefined, guild, addonInfo.addon]);
 
-                        const addonGuildManager = GuildManager.get(addonInfo.addon.name) || structureHandler.createStructure('Save');
-                        let guild = addonGuildManager.get(_role.guild.id) ?? structureHandler.createStructure('Guild', [_role.guild, addonInfo.addon]);
-                        
-                        const addonRoleManager = roleManager.get(addonInfo.addon.name) ?? structureHandler.createStructure('Save');
-                        const guildRoleManager = addonRoleManager.get(_role.guild.id) ?? structureHandler.createStructure('Save');
-                        let oldRole = guildRoleManager.get(_role.id) ?? structureHandler.createStructure('Role', [_role, addonInfo.addon, guild]);
-                        guildRoleManager.delete(_role.id);
-                        addonGuildManager.set(_role.guild.id, guildRoleManager);
-                        roleManager.set(addonInfo.addon.name, addonGuildManager);
+                    emitEvent(addonInfo.addon.name, 'roleDelete', scopes.bitfield.ROLES, oldRole, entry);
 
-                        let entry = structureHandler.createStructure('BaseEntry', [log, undefined, guild, addonInfo.addon]);
-
-                        emitEvent(addonInfo.addon.name, 'roleDelete', scopes.bitfield.ROLES, oldRole, entry);
-
-                        guild = null;
-                        oldRole = null;
-                        entry = null;
-                    }).catch(err => {});
+                    guild = null;
+                    oldRole = null;
+                    entry = null;
                 }
             }
         });
