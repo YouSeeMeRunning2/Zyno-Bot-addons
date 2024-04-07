@@ -42,7 +42,6 @@ class Guild{
         this.ownerId = guild.ownerId;
         this.verified = guild.verified;
         this.verificationLevel = guild.verificationLevel;
-        this.memberCount = guild.memberCount;
         this.botAdded = new Date(guild.joinedTimestamp);
         this.botAddedTimestamp = guild.joinedTimestamp;
         this.created = new Date(guild.createdTimestamp);
@@ -51,6 +50,9 @@ class Guild{
         this.boosts = guild.premiumSubscriptionCount;
         if(validatePermission(getAddonPermission(addon.name), scopes.bitfield.GUILDS)){
             addon.guilds.set(this.id, this);
+        }
+        this.getMemberCount = function(){
+            return guild.memberCount;
         }
         this.setName = function(name){
             return new Promise((resolve, reject) => {
@@ -289,6 +291,9 @@ class Guild{
         const addonVoiceStateManager = VoiceStateManager.get(this.addon.name) || new Save();
         const guildVoiceStateManager = addonVoiceStateManager.get(this.id) || new Save();
         return guildVoiceStateManager;
+    }
+    get memberCount(){
+        return this.getMemberCount();
     }
 }
 
