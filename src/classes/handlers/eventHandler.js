@@ -239,14 +239,14 @@ function handleEvents(client, parser){
                     const g = addonG.get(_member.guild.id);
                     if(g){
                         g.delete(_member.id);
-                        addonG.set(guild.id, g);
+                        addonG.set(_member.guild.id, g);
                         GuildMemberManager.set(addonInfo.addon.name, addonG);
                     }
 
                     const addonMemberManager = MemberManager.get(addonInfo.addon.name) || structureHandler.createStructure('Save');
                     const memberInfo = addonMemberManager.get(_member.id);
                     if(memberInfo){
-                        memberInfo.delete(guild.id);
+                        memberInfo.delete(_member.guild.id);
                         if(memberInfo.size === 0){
                             addonMemberManager.delete(_member.id);
                         } else {
