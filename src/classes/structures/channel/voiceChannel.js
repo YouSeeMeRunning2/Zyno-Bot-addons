@@ -31,16 +31,6 @@ class VoiceChannel extends GuildChannel{
         this.bitrate = data.bitrate;
         this.userLimit = data.userLimit;
         this.videoQuality = data.videoQualityMode === 2 ? 'Full' : 'Auto';
-        this.members = new Save();
-        const joinedMembers = Array.from(data.members.values());
-        const addonMemberManager = MemberManager.get(addon.name) || new Save();
-        for(var i = 0; i < joinedMembers.length; i++){
-            var joinedMember = joinedMembers[i];
-            var cachedMemberGuilds = addonMemberManager.get(joinedMember.id) || new Save();
-            var cachedMember = cachedMemberGuilds.get(guild.id);
-            if(!cachedMember) continue;
-            this.members.set(cachedMember.id, cachedMember);
-        }
         if(validatePermission(getAddonPermission(addon.name), scopes.bitfield.CHANNELS)){
             addon.channels.set(this.id, this);
         }
@@ -222,6 +212,18 @@ class VoiceChannel extends GuildChannel{
                 }
             });
         }
+        this.previousSong = function(){
+            return new Promise(async (resolve, reject) => {
+            	if(!validatePermission(getAddonPermission(addon.name), scopes.bitfield.CHANNELS)) return reject(`Missing channels scope in bitfield`);
+                if(!data.guild.members.me.voice.channel) return resolve();
+                try{
+					await client.audioManager.previous(data);
+                    resolve();
+                } catch(err) {
+                    reject(err);
+                }
+            });
+        }
         this.pauseSong = function(){
             return new Promise((resolve, reject) => {
             	if(!validatePermission(getAddonPermission(addon.name), scopes.bitfield.CHANNELS)) return reject(`Missing channels scope in bitfield`);
@@ -309,12 +311,49 @@ class VoiceChannel extends GuildChannel{
                 }
             });
         }
+        this.getStream = function(){
+            return new Promise((resolve, reject) => {
+            	if(!validatePermission(getAddonPermission(addon.name), scopes.bitfield.CHANNELS)) return reject(`Missing channels scope in bitfield`);
+                if(!data.guild.members.me.voice.channel) return resolve();
+                let stream = client.audioManager.getStream(data);
+                resolve(stream);
+            });
+        }
+        this.isPlaying = function(){
+            return new Promise((resolve, reject) => {
+            	if(!validatePermission(getAddonPermission(addon.name), scopes.bitfield.CHANNELS)) return reject(`Missing channels scope in bitfield`);
+                resolve(client.audioManager.isPlaying(data));
+            });
+        }
+        this.getSongInfo = function(){
+            return new Promise((resolve, reject) => {
+            	if(!validatePermission(getAddonPermission(addon.name), scopes.bitfield.CHANNELS)) return reject(`Missing channels scope in bitfield`);
+                resolve({...client.audioManager.getCurrentSong(data), filters: client.audioManager.getFilters(data)});
+            });
+        }
     }
     get messages(){
         const addonMessageManager = MessageManager.get(this.addon.name) || new Save();
         const guildMessageManager = addonMessageManager.get(this.guildId) || new Save();
         const channelMessageManager = guildMessageManager.get(this.id) || new Save();
         return channelMessageManager;
+    }
+    get members(){
+        let members = new Save();
+        const getGuild = client.guilds.cache.get(this.guildId);
+        if(!getGuild) return members;
+        const getChannel = getGuild.channels.cache.get(this.id);
+        if(!getChannel) return members;
+        const joinedMembers = Array.from(getChannel.members.values());
+        const addonMemberManager = MemberManager.get(this.addon.name) || new Save();
+        for(var i = 0; i < joinedMembers.length; i++){
+            var joinedMember = joinedMembers[i];
+            var cachedMemberGuilds = addonMemberManager.get(joinedMember.id) || new Save();
+            var cachedMember = cachedMemberGuilds.get(this.guildId);
+            if(!cachedMember) continue;
+            members.set(cachedMember.id, cachedMember);
+        };
+        return members;
     }
 }
 
