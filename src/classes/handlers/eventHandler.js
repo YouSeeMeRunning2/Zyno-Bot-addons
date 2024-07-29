@@ -17,7 +17,7 @@ const { ChannelType, AuditLogEvent } = require('discord.js');
 
 async function specificStructureCreation(guild, addonInfo, callback){
     if(!Array.isArray(builtStructures[addonInfo.addon.name])) builtStructures[addonInfo.addon.name] = [];
-	if(builtStructures[addonInfo.addon.name].indexOf(guild.id) >= 0) return;
+	if(builtStructures[addonInfo.addon.name].indexOf(guild.id) >= 0) return callback();
     if(addonInfo.verified === true && addonInfo.allowed === true){
         builtStructures[addonInfo.addon.name].push(guild.id);
         let g = structureHandler.createStructure('Guild', [guild, addonInfo.addon]);
@@ -1060,7 +1060,7 @@ function handleEvents(client, parser){
                         let oldChannel = guildChannelManager.get(_channel.id);
                         guildChannelManager.delete(_channel.id);
                         addonChannelManager.set(_channel.guild.id, guildChannelManager);
-                        channelManager.set(addonInfo.addon.name);
+                        channelManager.set(addonInfo.addon.name, addonChannelManager);
 
                         let entry = structureHandler.createStructure('BaseEntry', [log, undefined, guild, addonInfo.addon]);
 
