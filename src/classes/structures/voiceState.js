@@ -26,7 +26,7 @@ class VoiceState{
         this.serverDeaf = voiceState.serverDeaf;
         this.mute = this.selfMute || this.serverMute || false;
         this.deaf = this.selfDeaf || this.serverDeaf || false;
-        this.guildId = (voiceState.member ?? voiceState.channel)?.guild?.id;
+        this.guildId = voiceState?.guild?.id ?? (voiceState.member ?? voiceState.channel)?.guild?.id;
         this.channelId = voiceState.channelId || null;
         if(cache){
             const addonVoiceStateManager = VoiceStateManager.get(addon.name) || new Save();
@@ -77,7 +77,7 @@ class VoiceState{
         }
     }
     get member(){
-        return ((GuildMemberManager.get(addon.name) || new Save()).get(this.guildId) || new Save()).get(this.id);
+        return ((GuildMemberManager.get(this.addon.name) || new Save()).get(this.guildId) || new Save()).get(this.id);
     }
     get channel(){
         if(this.channelId === null) return null;
