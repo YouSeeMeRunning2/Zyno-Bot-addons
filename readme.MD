@@ -40,4 +40,4 @@ addon.once('ready', () => {
 ```
 
 ## Full documentation
-You can find all of our documentation herre, [Wiki](https://app.gitbook.com/o/0jghZSCj9Fij6BhhPLy5/s/H32pcDz3SxP8UThFTci3/our-bots/zyno-bot/addons)
+You can find all of our documentation herre, [https://docs.drakodevelopment.net/our-bots/zyno-bot/addons](https://docs.drakodevelopment.net/our-bots/zyno-bot/addons)
